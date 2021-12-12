@@ -1,0 +1,221 @@
+---
+title: "proceso_PR_FAD"
+author: "JL"
+date: "12/12/2021"
+output: html_document
+---
+
+```{r include = TRUE,warning=FALSE,message=FALSE}
+
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+
+library(naniar)
+
+library(gridExtra)
+library(grid)
+library(lattice)
+
+library(GGally)
+
+```
+
+
+
+
+```{r include = TRUE}
+df_KC <- as.data.frame(read.csv(file="/home/jl/Escritorio/Master DS/R/PracticaFinal/kc_house_data.csv"))
+head(df_KC, n = 15)
+summary(df_KC)
+str(df_KC)
+```
+
+
+
+```{r include = TRUE}
+#Variables Cuantitativas
+
+###grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=2)
+
+#price
+p1 <- ggplot(df_KC, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=price), colour = "navy", fill = "steelblue")
+#grid.arrange(p1, p2, nrow=1)
+
+#sqft_living
+p3 <- ggplot(df_KC, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_living), colour = "navy", fill = "steelblue")
+#grid.arrange(p3, p4, nrow=1)
+
+#sqft_living15
+p5 <- ggplot(df_KC, aes(x=sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p6 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_living15), colour = "navy", fill = "steelblue")
+#grid.arrange(p5, p6, nrow=1)
+
+#sqft_lot
+p7 <- ggplot(df_KC, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p8 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_lot), colour = "navy", fill = "steelblue")
+#grid.arrange(p7, p8, nrow=1)
+
+#sqft_lot15
+p9 <- ggplot(df_KC, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p10 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_lot15), colour = "navy", fill = "steelblue")
+#grid.arrange(p9, p10, nrow=1)
+
+#sqft_above
+p11 <- ggplot(df_KC, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p12 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_above), colour = "navy", fill = "steelblue")
+#grid.arrange(p11, p12, nrow=1)
+
+#sqft_basement
+p13 <- ggplot(df_KC, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p14 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=sqft_basement), colour = "navy", fill = "steelblue")
+#grid.arrange(p13, p14, nrow=1)
+
+#yr_built
+p15 <- ggplot(df_KC, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p16 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=yr_built), colour = "navy", fill = "steelblue")
+#grid.arrange(p15, p16, nrow=1)
+
+#yr_renovated
+p17 <- ggplot(df_KC, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p18 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
+#grid.arrange(p17, p18, nrow=1)
+
+#grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=2)
+#grid.arrange(p9, p10, p11, p12, p13, p14, p15, p16, nrow=2)
+#grid.arrange(p17, p18, nrow=1)
+
+```
+
+
+```{r include = TRUE}
+
+#date cambiado a fecha
+df_KC$date <- gsub("T000000","",as.character(df_KC$date))
+df_KC$date <- as.Date(df_KC[, 'date'],'%Y%m%d')
+str(df_KC$date)
+
+```
+```{r include = TRUE}
+
+#Variables Cuanlitativas
+
+#date
+df_dateMonth <- format(df_KC$date,"%m")
+df_dateYear <- format(df_KC$date,"%Y")
+df_dateMix <- data.frame(df_dateMonth, df_dateYear)
+df_date2014 <- subset(df_dateMix, df_dateYear == 2014)
+df_date2015 <- subset(df_dateMix, df_dateYear == 2015)
+p1 <- ggplot(df_dateMix, aes(x=df_dateYear)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(df_date2014, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(df_date2015, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
+
+#grid.arrange(p1, p2, p3, nrow=1)
+
+#bedrooms + bedrooms
+p1 <- ggplot(df_KC, aes(x=bedrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(df_KC, aes(x=bathrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(df_KC, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue")
+
+#grid.arrange(p1, p2, p3, nrow=1)
+
+#waterfront + view
+p1 <- ggplot(df_KC, aes(x=waterfront)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(df_KC, aes(x=view)) + geom_bar(colour = "navy", fill = "steelblue")
+
+#grid.arrange(p1, p2, nrow=1)
+
+#condition + grade
+p1 <- ggplot(df_KC, aes(x=condition)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(df_KC, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue")
+
+#grid.arrange(p1, p2, nrow=1)
+
+#zipcode
+#ggplot(df_KC, aes(x=zipcode)) + geom_bar(colour = "navy", fill = "steelblue")
+
+```
+
+```{r include = TRUE}
+
+#Analisis Multivariante Cuantitativo
+AMct01 <- df_KC[, c(3, 6, 20, 7, 21)]
+AMct02 <- df_KC[, c(3, 13, 14, 15, 16)]
+#ggpairs(AMct01)
+#ggpairs(AMct02)
+
+```
+
+
+```{r include = TRUE}
+
+#Datos faltantes
+colSums(is.na(df_KC))
+
+#Datos con valor 0
+colSums(df_KC==0)
+
+#muchas variables que contienen ceros, se convertiran en dummies, por lo que no se tratan, a excepcion de los NA de sqft_above que
+#se igualaran al valor del sqft_living puesto que en varios casos coincide
+
+sqft_compare <- df_KC[, c(6, 13)]
+nrow(subset(sqft_compare, sqft_living == sqft_above))
+
+
+
+#missing <- is.na(df_KC)
+#missing <- arrange(missing, sqft_above)
+#vis_miss(df_KC)
+
+```
+
+
+```{r include = TRUE}
+
+#Transformacion variables cuantitativas
+
+# Posibles soluciones
+# 1.-Transformacion logaritmico 10
+# 2.-Raiz cuadrada
+# 3.-Inversa 1/x ?????
+
+#price
+
+df_KC <- mutate(df_KC, price_log10 <- log10(df_KC$price))
+df_KC <- mutate(df_KC, price_sqrt <- sqrt(df_KC$price))
+df_KC <- mutate(df_KC, price_inv <- 1/(df_KC$price))
+str(df_KC)
+
+p1 <- ggplot(df_KC, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(df_KC, aes(x=price_log10 <- log10(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p3 <- ggplot(df_KC, aes(x=price_sqrt <- sqrt(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(df_KC, aes(x=price_inv <- 1/(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, p3, p4, nrow=1)
+
+qqnorm(df_KC$price)
+qqline(df_KC$price)
+qqnorm(df_KC$price_inv <- 1/(df_KC$price))
+qqline(df_KC$price_inv <- 1/(df_KC$price))
+
+
+#sqft_living
+
+df_KC <- mutate(df_KC, sqlv_log10 <- log10(df_KC$sqft_living))
+df_KC <- mutate(df_KC, sqlv_sqrt <- sqrt(df_KC$sqft_living))
+df_KC <- mutate(df_KC, sqlv_inv <- 1/(df_KC$sqft_living))
+str(df_KC)
+
+p1 <- ggplot(df_KC, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(df_KC, aes(x=sqlv_log10 <- log10(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p3 <- ggplot(df_KC, aes(x=sqlv_sqrt <- sqrt(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(df_KC, aes(x=sqlv_inv <- 1/(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, p3, p4, nrow=1)
+
+
+
+
+```
+
