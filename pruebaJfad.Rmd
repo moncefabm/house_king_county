@@ -26,7 +26,7 @@ library(GGally)
 
 
 ```{r include = TRUE}
-df_KC <- as.data.frame(read.csv(file="/home/jl/Escritorio/Master DS/R/PracticaFinal/kc_house_data.csv"))
+df_KC <- as.data.frame(read.csv(file="C:/Users/Juanjo/Desktop/MasterDataScience/Practica/Pull1/house_king_county/kc_house_data.csv"))
 head(df_KC, n = 15)
 summary(df_KC)
 str(df_KC)
@@ -37,7 +37,7 @@ str(df_KC)
 ```{r include = TRUE}
 #Variables Cuantitativas
 
-###grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=2)
+#grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=4)
 
 #price
 p1 <- ggplot(df_KC, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
@@ -84,8 +84,8 @@ p17 <- ggplot(df_KC, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), c
 p18 <- ggplot(df_KC, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
 #grid.arrange(p17, p18, nrow=1)
 
-#grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=2)
-#grid.arrange(p9, p10, p11, p12, p13, p14, p15, p16, nrow=2)
+#grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=4)
+#grid.arrange(p9, p10, p11, p12, p13, p14, p15, p16, nrow=4)
 #grid.arrange(p17, p18, nrow=1)
 
 ```
@@ -142,16 +142,54 @@ p2 <- ggplot(df_KC, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue"
 ```{r include = TRUE}
 
 #Analisis Multivariante Cuantitativo
-AMct01 <- df_KC[, c(3, 6, 20, 7, 21)]
-AMct02 <- df_KC[, c(3, 13, 14, 15, 16)]
-#ggpairs(AMct01)
-#ggpairs(AMct02)
+
+am_cuant <- df_KC %>% select("price", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15")
+
+head(am_cuant, 10)
+amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "price", "sqft_basement", "sqft_above")
+amc2 <- c("yr_built", "yr_renovated", 'lat', 'long', "price")
+
+am_cuant %>% select(amc1) %>% na.omit() %>% ggpairs(columns = 1:6)
+```
+```{r}
+
+am_cuant %>% select(amc2) %>% na.omit() %>% ggpairs(columns = 1:5)
+
+```
+```{r}
+am_cuant1 <- am_cuant %>% select(amc1) %>% na.omit() %>% ggcorr()
+am_cuant2 <- am_cuant %>% select(amc2) %>% na.omit() %>% ggcorr()
+
+grid.arrange(am_cuant1, am_cuant2, nrow=1)
+```
+```{r}
+#Correlación numérica entre variables
+corr <- am_cuant %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
+
+```
+
+```{r}
+
 
 ```
 
 
-```{r include = TRUE}
 
+```{r include = TRUE}
+#Analisis multivariante cualitativo
+
+am_cual <- df_KC %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
+head(am_cual, 10)
+
+
+
+```
+
+```{r}
 #Datos faltantes
 colSums(is.na(df_KC))
 
@@ -170,7 +208,10 @@ nrow(subset(sqft_compare, sqft_living == sqft_above))
 #missing <- arrange(missing, sqft_above)
 #vis_miss(df_KC)
 
+
+
 ```
+
 
 
 ```{r include = TRUE}
@@ -193,7 +234,7 @@ p1 <- ggplot(df_KC, aes(x=price)) + geom_histogram(aes(y=..density..), colour = 
 p2 <- ggplot(df_KC, aes(x=price_log10 <- log10(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
 p3 <- ggplot(df_KC, aes(x=price_sqrt <- sqrt(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
 p4 <- ggplot(df_KC, aes(x=price_inv <- 1/(df_KC$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
-grid.arrange(p1, p2, p3, p4, nrow=1)
+grid.arrange(p1, p2, p3, p4, nrow=2)
 
 qqnorm(df_KC$price)
 qqline(df_KC$price)
@@ -212,7 +253,7 @@ p1 <- ggplot(df_KC, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), col
 p2 <- ggplot(df_KC, aes(x=sqlv_log10 <- log10(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
 p3 <- ggplot(df_KC, aes(x=sqlv_sqrt <- sqrt(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
 p4 <- ggplot(df_KC, aes(x=sqlv_inv <- 1/(df_KC$sqft_living))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
-grid.arrange(p1, p2, p3, p4, nrow=1)
+grid.arrange(p1, p2, p3, p4, nrow=2)
 
 
 
