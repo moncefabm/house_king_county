@@ -140,20 +140,43 @@ p2 <- ggplot(df_KC, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue"
 ```
 
 ```{r include = TRUE}
-
-#Analisis Multivariante Cuantitativo
+#******************************************************************************************************
+#***************************************************************************************************
+  
+#ANALISIS MULTIVARIANTE CUANTITATIVO
 
 am_cuant <- df_KC %>% select("price", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15")
 
-head(am_cuant, 10)
 amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "price", "sqft_basement", "sqft_above")
 amc2 <- c("yr_built", "yr_renovated", 'lat', 'long', "price")
 
-am_cuant %>% select(amc1) %>% na.omit() %>% ggpairs(columns = 1:6)
+#Tabla de correlaciones, me la guardo como dataframe
+
+corcuant <- round(cor(am_cuant[,]),3)
+corcuant_df <- data.frame(corcuant)
+cor <- 0.6
+corneg <- -0.6
+corcuant_df[corcuant_df ==1] <- 0
+
+maxcor <- subset(corcuant_df, price>cor | sqft_living>cor | sqft_lot>cor | sqft_basement>cor | yr_built>cor | yr_renovated>cor | lat>cor | long>cor | sqft_living15>cor |
+                   sqft_lot15>cor)
+maxcor[maxcor <= 0.4] <- 0
+maxcor
+
+
+#Correlaciones mayores a 0.6
+
+
+
 ```
 ```{r}
+am_cuant %>% select(amc1) %>%  ggpairs(columns = 1:6)
+```
 
-am_cuant %>% select(amc2) %>% na.omit() %>% ggpairs(columns = 1:5)
+
+```{r}
+
+am_cuant %>% select(amc2) %>% ggpairs(columns = 1:5)
 
 ```
 ```{r}
@@ -180,12 +203,19 @@ as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(F
 
 
 ```{r include = TRUE}
-#Analisis multivariante cualitativo
+#****************************************************************************************************************************************
+  #**************************************************************************************************************************************
+
+#ANÁLISIS MULTIVARIANTE CUALITATIVO
 
 am_cual <- df_KC %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
 head(am_cual, 10)
 
+```
+```{r}
+am1 <- c("bedrooms", "bathrooms", "waterfront", "view","condition","grade","zipcode")
 
+round(cor(am_cual[,am1]),3)
 
 ```
 
