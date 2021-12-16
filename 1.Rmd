@@ -159,14 +159,17 @@ train$price_m2 = train$price/train$sqft_living
 str(train)
 ```
 
+
+
+
 ### Analisis multivariante cuantitativo
 
 Se estudia en dos tablas las variables cuantitativas.
 
 ```{r}
-am_cuant <- train %>% select("price", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15")
+am_cuant <- train %>% select("price","Dist_from_seattle","price_m2", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "sqft_living15", "sqft_lot15")
 
-amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "price", "sqft_basement", "sqft_above")
+amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "sqft_basement", "sqft_above","price","price_m2","Dist_from_seattle")
 amc2 <- c("yr_built", "yr_renovated", "price")
 
 
@@ -180,12 +183,12 @@ as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(F
 
 
 ```
-Se puede observar que las variables con mayor correlación son "sqft_above" y "sqft_living" Las correlaciones entre "sqft_living" y "sqft_living15" se debe a que "sqft_living15" se trata de la misma variable actualizada para 2015. La variable "price" como es de esperar es correlativa con "sqft_living" y "sqft_living15". Encontramos una correlación sorprendente entre "yr_built" y "sqft_above".
+Se puede observar que las variables con mayor correlación son __"sqft_above"__ y __"sqft_living"__ Las correlaciones entre __"sqft_living"__ y __"sqft_living15"__ se debe a que __"sqft_living15"__ se trata de la misma variable actualizada para 2015. La variable __"price"__ como es de esperar es correlativa con __"sqft_living"__ y __"sqft_living15"__ incluso más que __"price_m2"__. Encontramos una correlación sorprendente entre __"yr_built"__ y __"sqft_above"__.
 
 Gráficos de correlaciones.
 
 ```{r}
-am_cuant %>% select(amc1) %>%  ggpairs(columns = 1:6)
+am_cuant %>% select(amc1) %>%  ggpairs(columns = 1:8)
 ```
 
 
@@ -196,14 +199,42 @@ grid.arrange(am_cuant1, nrow=1)
 ```
 De igual forma en el anterior grafico encontramos las mismas correlaciones entre variables.
 
+Estudiamos la relación entre la variable __"price_m2"__ y la variable __"Dist_from_seattle"__
+
+```{r}
+
+ggplot(train,aes(x=Dist_from_seattle,y=price_m2))+geom_point()+geom_smooth()
+
+```
+Podemos observar que existe una relación entre el precio por metro cuadrado de la vivienda con su cercanía al centro de Seattle.
+
+Se estudia la relación entre la variable __"Dist_from_seattle"__ y __"price"__
+
+```{r}
+ggplot(train,aes(x=Dist_from_seattle,y=price))+geom_point()+geom_smooth()
+
+```
+A pesar de ser menor la correlación, la distribución explica más sobre del precio de la vivienda.
+
+Se estudia la relación entre cada uno de los Clusters y la variable __"price"__
+
+```{r}
+ggplot(train,aes(x=Clusters,y=price))+geom_point()
+
+```
+```{r}
+bwplot(Clusters~price, data=train, horizontal=TRUE)
+```
+
+
 ### Analisis multivariante cualitativo
 
 
 
-Se estudian las correlaciones entre las variables "bedrooms", "bathrooms","condition" y "grade" ya que el resto son irrelevantes.
+Se estudian las correlaciones entre las variables cualitativas "bedrooms", "bathrooms","condition","grade".
 
 ```{r}
-am_cual <- train %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
+am_cual <- train %>% select("date","sale_date", "sale_year", "sale_month", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
 am1 <- c("bedrooms", "bathrooms","condition","grade")
 
 #Correlación numérica entre variables
@@ -214,6 +245,16 @@ as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.1) %>% subset(., abs(F
   .[c(seq(1, nrow(.), by=2)),]
 
 ```
+
+```{r}
+am_cual1 <- am_cual %>% select(am1) %>% na.omit() %>% ggcorr()
+grid.arrange(am_cual1, nrow=1)
+```
+Se encuentra una correlación alta entre __"bathrooms"__ y __"grade"__
+
+
+
+
 
 ## DETECCIÓN E IMPUTACIÓN DE DATOS FALTANTES
 
