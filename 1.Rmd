@@ -1,0 +1,406 @@
+---
+title: "Practica Fundamentos"
+author: "Juan - Jose - Moncef"
+date: "17/12/2021"
+output:
+  html_document:
+    theme: united
+    code_folding: "hide"
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+#Librerias
+
+library(tidyr)
+library(date)
+library(zoo)
+#library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(caret)
+library(dplyr)
+library(olsrr)
+library(fastDummies)
+library(pracma)
+library(geosphere)
+library(readxl)
+library(glmnet)
+
+
+library(readr)
+library(naniar)
+library(gridExtra)
+library(grid)
+library(lattice)
+library(GGally)
+```
+
+## INTRODUCCIÓN
+
+Comentar
+
+## OBJETIVOS
+
+Comentar
+
+## CARGA DE DATOS
+
+Lectura de datos, separación TRAIN vs TEST
+
+```{r}
+#Cargamos los datos y definimos una muestra train y otra test
+data = as.data.frame(read_excel("/home/jl/Escritorio/Master DS/Proyecto_King_County/m/kc_house_data_vfinal.xlsx"))
+
+dt = sort(sample(nrow(data), nrow(data)*.7))
+train<-data[dt,]
+test<-data[-dt,]
+summary(train)
+```
+
+## ANÁLISIS EDA
+
+EDA datos actuales, más variables nuevas que creamos
+
+
+### Analisis de datos actuales
+
+__Datos actuales__
+
+```{r}
+str(train)
+```
+
+### Variables cuantitativas
+
+```{r}
+var_cuant <- train[, c(3, 6, 20, 7, 21, 13, 14, 15, 16)]
+str(var_cuant)
+```
+
+
+Se estudia la variable __precio__
+```{r}
+p1 <- ggplot(train, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price), colour = "navy", fill = "steelblue")
+grid.arrange(p1, p2, nrow=1)
+summary(train$price)
+```
+
+Se estudia la variable __sqft_living__
+```{r}
+p3 <- ggplot(train, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living), colour = "navy", fill = "steelblue")
+grid.arrange(p3, p4, nrow=1)
+summary(train$sqft_living)
+```
+
+
+Se estudia la variable __sqft_living15__
+```{r}
+p5 <- ggplot(train, aes(x=sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p6 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living15), colour = "navy", fill = "steelblue")
+grid.arrange(p5, p6, nrow=1)
+summary(train$sqft_living15)
+```
+
+
+### Variables cualitativas
+
+```{r}
+var_cual <- train[, c(2, 4, 5, 8, 9 ,10 , 11, 12, 17)]
+str(var_cual)
+```
+
+Se estudia la variable __date__
+```{r}
+train$date <- gsub("T000000","",as.character(train$date))
+train$date <- as.Date(train[, 'date'],'%Y%m%d')
+#str(train$date)
+
+df_dateMonth <- format(train$date,"%m")
+df_dateYear <- format(train$date,"%Y")
+df_dateMix <- data.frame(df_dateMonth, df_dateYear)
+df_date2014 <- subset(df_dateMix, df_dateYear == 2014)
+df_date2015 <- subset(df_dateMix, df_dateYear == 2015)
+p1 <- ggplot(df_dateMix, aes(x=df_dateYear)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(df_date2014, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(df_date2015, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+summary(train$date)
+```
+Se estudian las variable __bedrooms, bathrooms, floors__
+```{r}
+p1 <- ggplot(train, aes(x=bedrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=bathrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+
+
+### Creación de nuevas variables
+
+__Variables__
+
+Se introducen las variables _saledate, saleyear,salemonth..._
+
+```{r}
+train$sale_date = substr(train$date, 1, 8)
+train = transform(train, sale_date = as.Date(as.character(sale_date), "%Y%m%d"))
+train$sale_year = as.numeric(format(train$sale_date, format="%Y"))
+train$sale_month = format(train$sale_date, format="%m")
+train$sale_quarter = as.yearqtr(train$sale_date)
+#train$sale_quarter = str_sub(train$sale_quarter,-2,-1)
+train$sale_tenure =  as.numeric(train$sale_year) - train$yr_built
+train$yr_since_last_renovated = ifelse(train$sale_year - train$yr_renovated > 2013, 0, train$sale_year - train$yr_renovated)
+train$price_m2 = train$price/train$sqft_living
+str(train)
+```
+
+### Analisis multivariante cuantitativo
+
+Se estudia en dos tablas las variables cuantitativas
+
+```{r}
+AMct01 <- train[, c(3, 6, 20, 7, 21)]
+AMct02 <- train[, c(3, 13, 14, 15, 16)]
+ggpairs(AMct01)
+ggpairs(AMct02)
+```
+
+### Analisis multivariante cuantitativo
+
+Se estudia en dos tablas las variables cuanlitativas
+
+```{r}
+
+```
+
+## DETECCIÓN E IMPUTACIÓN DE DATOS FALTANTES
+
+Comentar
+
+### Datos faltantes
+
+Datos faltantes, __NA__
+
+```{r}
+colSums(is.na(train))
+```
+
+Datos con valor __0__
+
+```{r}
+colSums(train==0)
+```
+
+### Imputación de datos faltantes
+
+Se estudian los NA de sqft_above que se igualaran al valor del sqft_living puesto que en más de la mitad de los datos coinciden
+
+Nº total filas
+```{r}
+nrow(train)
+```
+Nº filas coinciden sqft_living y sqft_above
+```{r}
+sqft_compare <- train[, c(6, 13)]
+nrow(subset(sqft_compare, sqft_living == sqft_above))
+```
+
+## TRASNFORMACIÓN DE VARIABLES
+
+
+Transformación _price_
+
+```{r}
+train <- mutate(train, price_log10 <- log10(train$price))
+train <- mutate(train, price_sqrt <- sqrt(train$price))
+train <- mutate(train, price_inv <- 1/(train$price))
+
+
+p1 <- ggplot(train, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=price_log10 <- log10(train$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p3 <- ggplot(train, aes(x=price_sqrt <- sqrt(train$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=price_inv <- 1/(train$price))) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, p3, p4, nrow=2)
+
+qqnorm(train$price)
+qqline(train$price)
+qqnorm(train$price_log10 <- log10(train$price))
+qqline(train$price_log10 <- log10(train$price))
+
+
+#Tranfomación de variables
+
+train$waterfront = as.factor(train$waterfront)
+train$view = as.factor(train$view)
+train$zipcode = as.factor(train$zipcode)
+
+
+#Creamos una variable que mide la distnacia de cada casa a la venta con respecto al centro ecónomico de la ciudad: Seattle
+seattle = c(-122.335167, 47.608013)
+train = mutate(train, Dist_from_seattle=distHaversine(cbind(long, lat),seattle))
+
+#POr otro lado, se calcula la distancia de cada casa con respecto al resto, agrupando después casas cercanas en clústers.
+long= train$long
+lat = train$lat
+DataMat<-as.matrix(cbind(long, lat))
+DataMat[is.na(DataMat)]<-0
+
+my_data <- as_tibble(DataMat)
+#my_data=my_data %>% slice(1:100)
+my_data = as.data.frame(my_data)
+
+Dist_Mat<-distm(my_data,my_data,fun=distHaversine)/1000
+hclustfunc <- function(x) hclust(x, method="complete")
+distfunc <- function(x) as.dist((1-cor(t(x)))/2)
+d <- distfunc(Dist_Mat)
+fit <- hclustfunc(d)
+my_data$Clusters<- cutree(fit, h=0.25)
+train = merge(x = train, y = my_data, by = c("lat", "long") , all.x = TRUE)
+train$Clusters = as.factor(train$Clusters)
+bwplot(Clusters~price, data = train, horizontal= TRUE)
+
+
+
+
+#specify_decimal
+specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
+
+#beautifying summary.lm
+new_summary  <- function(lmcoef, digits) {
+  
+  coefs <- as.data.frame(lmcoef)
+  coefs[] <- lapply(coefs, function(x) specify_decimal(x, digits))
+  coefs
+  
+}
+
+
+write_csv(train, file = "C:/Users/Moncef/Documents/house_king_county/train.csv")
+
+#Convertimos las variables catageoricas en dummies para su uso en el modelo.
+
+train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
+                   remove_selected_columns = TRUE)
+
+train_v1$sqft_lot_log = log(train_v1$sqft_lot)
+train_v1$sqft_above_log = log(train_v1$sqft_above)
+train_v1$sqft_living_log = log(train_v1$sqft_living)
+train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
+#train_v1$yr_renovated_log = log(train_v1$yr_renovated)
+#train_v1$sale_tenure_log = log(train_v1$sale_tenure)
+
+
+#Incluimos en c() las variables que NO queremos usar en la regresión.
+train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+                              sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
+
+summarize(train_v2)
+
+model <- lm(log(price_m2) ~ ., data = train_v2)
+summary(model)
+new_summary(summary(model)$coefficients, 5)
+
+plot(model, 1)
+res <- resid(model)
+plot(fitted(model), res)
+plot(model, which=1, col=c("blue"))
+plot(model, 2)
+
+require(nortest)  # Se debe haber instalado nortest
+lillie.test(model$residuals)
+
+
+```
+
+
+## ANÁLISIS DEL MODELO
+
+Comentar
+
+```{r}
+#Analisis de variables candidatas 
+step_model <- stepAIC(model, trace = TRUE, direction= "both")
+stargazer(model, step_model, type = "text")
+
+
+#create Q-Q plot for residuals
+qqnorm(res)
+
+#add a straight diagonal line to the plot
+qqline(res) 
+
+#Add
+plot(density(res))
+
+
+
+sigma(model)*100/mean(log(train_v2$price_m2))
+
+
+
+#LASSO
+
+train_v2_nona <- na.omit(train_v2)
+
+x <- model.matrix(log(train_v2_nona$price_m2)~., train_v2_nona )[,-1]
+y <- log(train_v2_nona$price_m2)
+
+
+#######
+data_lasso <- train_v2
+lambdas <- model.matrix(log(price_m2) ~., data = data_lasso)
+y <- log(train_v2$price_m2)
+
+# Funciones de error por variable
+models_lasso <- glmnet(x = lambdas, y = y, alpha = 1)
+plot(models_lasso, xvar = "lambda", label = TRUE)
+
+
+set.seed(737)
+
+# Ajuste de la función de error
+cv_lasso <- cv.glmnet(x = lambdas, y = y, alpha = 1)
+plot(cv_lasso)
+
+
+out_eleven <- glmnet(lambdas,y,alpha=1,lambda = cv_lasso$lambda.1se)
+out_eleven
+lasso_coef_eleven <- predict(out_eleven, type="coefficients")[1:27,]
+lasso_coef_eleven
+cv_lasso
+
+#Incluimos en c() las variables que NO queremos usar en la regresión.
+
+
+model_lasso <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
+                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                  + Clusters_4+ Clusters_5 + Clusters_6 + Clusters_7  + Clusters_8 
+                  + Clusters_9 + Clusters_10 + Clusters_11 + Clusters_12 + Clusters_13
+                  + sale_quarter_Q1 + sale_quarter_Q3 +sale_quarter_Q4, data = train_v2)
+summary(model_lasso)
+new_summary(summary(  model_lasso)$coefficients, 5)
+
+
+
+
+residuals =  model_lasso$residuals
+autoplot(model_lasso)
+abline(model_lasso <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
+                         + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                         + Clusters_4+ Clusters_5 + Clusters_6 + Clusters_7  + Clusters_8 
+                         + Clusters_9 + Clusters_10 + Clusters_11, Clusters_12, Clusters_13
+                         + sale_quarter_Q1 + sale_quarter_Q3 +sale_quarter_Q4, data = train_v2))
+
+
+
+
+```
+
+
