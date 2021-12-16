@@ -1,4 +1,5 @@
 #Librerias
+library(MASS)
 library(tidyr)
 library(date)
 library(zoo)
@@ -13,6 +14,9 @@ library(pracma)
 library(geosphere)
 library(readxl)
 library(glmnet)
+library(emmeans)
+library(stargazer)
+
 
 #Cargamos los datos y definimos una muestra train y otra test
 data = as.data.frame(read_excel("~/house_king_county/kc_house_data_vfinal.xlsx"))
@@ -32,6 +36,7 @@ train$sale_quarter = str_sub(train$sale_quarter,-2,-1)
 train$sale_tenure =  as.numeric(train$sale_year) - train$yr_built
 train$yr_since_last_renovated = ifelse(train$sale_year - train$yr_renovated > 2013, 0, train$sale_year - train$yr_renovated)
 train$price_m2 = train$price/train$sqft_living
+densityplot(log(train$price_m2))
 
 #Tranfomación de variables
 
@@ -44,8 +49,6 @@ train$zipcode = as.factor(train$zipcode)
 seattle = c(-122.335167, 47.608013)
 train = mutate(train, Dist_from_seattle=distHaversine(cbind(long, lat),seattle))
 
-
-s
 #POr otro lado, se calcula la distancia de cada casa con respecto al resto, agrupando después casas cercanas en clústers.
 long= train$long
 lat = train$lat
@@ -67,23 +70,61 @@ train$Clusters = as.factor(train$Clusters)
 bwplot(Clusters~price, data = train, horizontal= TRUE)
 
 
+
+
+#specify_decimal
+specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
+
+#beautifying summary.lm
+new_summary  <- function(lmcoef, digits) {
+  
+  coefs <- as.data.frame(lmcoef)
+  coefs[] <- lapply(coefs, function(x) specify_decimal(x, digits))
+  coefs
+  
+}
+
+
+write_csv(train, file = "C:/Users/Moncef/Documents/house_king_county/train.csv")
+
 #Convertimos las variables ctageoricas en dummies para su uso en el modelo.
 
-train<- dummy_cols(train, select_columns = c('sale_quarter','waterfront','view','Clusters'),remove_most_frequent_dummy = TRUE,
+train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
                    remove_selected_columns = TRUE)
+
+train_v1$sqft_lot_log = log(train_v1$sqft_lot)
+train_v1$sqft_above_log = log(train_v1$sqft_above)
+train_v1$sqft_living_log = log(train_v1$sqft_living)
+train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
+#train_v1$yr_renovated_log = log(train_v1$yr_renovated)
+#train_v1$sale_tenure_log = log(train_v1$sale_tenure)
 
 
 #Incluimos en c() las variables que NO queremos usar en la regresión.
-train_v2 = select(train,-c(id,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
-                           sale_year,yr_built, yr_renovated,sale_month,
-                           yr_since_last_renovated))
+train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+                              sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
 
+summarize(train_v2)
 
-model <- lm(log(price_m2) ~. -sqft_living15, data = train_v2)
+model <- lm(log(price_m2) ~ ., data = train_v2)
 summary(model)
+new_summary(summary(model)$coefficients, 5)
 
+plot(model, 1)
 res <- resid(model)
 plot(fitted(model), res)
+plot(model, which=1, col=c("blue"))
+plot(model, 2)
+
+require(nortest)  # Se debe haber instalado nortest
+lillie.test(model$residuals)
+
+
+
+#Analisis de variables candidatas 
+step_model <- stepAIC(model, trace = TRUE, direction= "both")
+stargazer(model, step_model, type = "text")
+
 
 #create Q-Q plot for residuals
 qqnorm(res)
@@ -96,33 +137,61 @@ plot(density(res))
 
 
 
+sigma(model)*100/mean(log(train_v2$price_m2))
+
+
+
 #LASSO
 
-train_v2_nona <- na.omit(train)
+train_v2_nona <- na.omit(train_v2)
 
-x <- model.matrix(price~., train)[,-1]
-y <- train_v2_nona$price
-
-grid <- 10^seq(10,-2,length=100)
-
-lasso_reg = glmnet(x, y, alpha = 1, lambda = grid)
-plot(lasso_reg)
-
-set.seed(1234)
-cv_result <- cv.glmnet(x,y,alpha=1)
-plot(cv_result)
+x <- model.matrix(log(train_v2_nona$price_m2)~., train_v2_nona )[,-1]
+y <- log(train_v2_nona$price_m2)
 
 
-best_lam <- cv_result$lambda.min
-out <- glmnet(x,y,alpha=1,lambda = best_lam)
-lasso_coef <- predict(out,type="coefficients",s=best_lam)[1:20,]
-lasso_coef[lasso_coef!=0]
+#######
+data_lasso <- train_v2
+lambdas <- model.matrix(log(price_m2) ~., data = data_lasso)
+y <- log(train_v2$price_m2)
+
+# Funciones de error por variable
+models_lasso <- glmnet(x = lambdas, y = y, alpha = 1)
+plot(models_lasso, xvar = "lambda", label = TRUE)
 
 
-first_eight <- max(which(cv_result$nzero == 6))
-my_lam <- cv_result$lambda[first_eight]
-out_eight <- glmnet(x,y,alpha=1,lambda = first_eight)
-lasso_coef_eight <- predict(out_eight,type="coefficients")[1:20,]
-lasso_coef_eight[lasso_coef_eight!=0]
+set.seed(737)
+
+# Ajuste de la función de error
+cv_lasso <- cv.glmnet(x = lambdas, y = y, alpha = 1)
+plot(cv_lasso)
+
+
+out_eleven <- glmnet(lambdas,y,alpha=1,lambda = cv_lasso$lambda.1se)
+out_eleven
+lasso_coef_eleven <- predict(out_eleven, type="coefficients")[1:27,]
+lasso_coef_eleven
+cv_lasso
+
+#Incluimos en c() las variables que NO queremos usar en la regresión.
+
+
+model_lasso <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
+                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                  + Clusters_4+ Clusters_5 + Clusters_6 + Clusters_7  + Clusters_8 
+                  + Clusters_9 + Clusters_10 + Clusters_11 + Clusters_12 + Clusters_13
+                  + sale_quarter_Q1 + sale_quarter_Q3 +sale_quarter_Q4, data = train_v2)
+summary(model_lasso)
+new_summary(summary(  model_lasso)$coefficients, 5)
+
+
+
+
+residuals =  model_lasso$residuals
+autoplot(model_lasso)
+abline(model_lasso <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
+                         + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                         + Clusters_4+ Clusters_5 + Clusters_6 + Clusters_7  + Clusters_8 
+                         + Clusters_9 + Clusters_10 + Clusters_11, Clusters_12, Clusters_13
+                         + sale_quarter_Q1 + sale_quarter_Q3 +sale_quarter_Q4, data = train_v2))
 
 
