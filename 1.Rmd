@@ -51,7 +51,7 @@ Lectura de datos, separación TRAIN vs TEST
 
 ```{r}
 #Cargamos los datos y definimos una muestra train y otra test
-data = as.data.frame(read_excel("/home/jl/Escritorio/Master DS/Proyecto_King_County/m/kc_house_data_vfinal.xlsx"))
+data <- read.csv(file="C:/Users/Juanjo/Desktop/MasterDataScience/Practica/Pull1/train.csv")
 
 dt = sort(sample(nrow(data), nrow(data)*.7))
 train<-data[dt,]
@@ -61,7 +61,7 @@ summary(train)
 
 ## ANÁLISIS EDA
 
-EDA datos actuales, más variables nuevas que creamos
+Se realiza un análisis exploratorio inicial para observar las varaibles.
 
 
 ### Analisis de datos actuales
@@ -146,7 +146,7 @@ grid.arrange(p1, p2, p3, nrow=1)
 
 __Variables__
 
-Se introducen las variables _saledate, saleyear,salemonth..._
+Se crean las variables _saledate, saleyear,salemonth..._
 
 ```{r}
 train$sale_date = substr(train$date, 1, 8)
@@ -163,20 +163,55 @@ str(train)
 
 ### Analisis multivariante cuantitativo
 
-Se estudia en dos tablas las variables cuantitativas
+Se estudia en dos tablas las variables cuantitativas.
 
 ```{r}
-AMct01 <- train[, c(3, 6, 20, 7, 21)]
-AMct02 <- train[, c(3, 13, 14, 15, 16)]
-ggpairs(AMct01)
-ggpairs(AMct02)
+am_cuant <- train %>% select("price", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15")
+
+amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "price", "sqft_basement", "sqft_above")
+amc2 <- c("yr_built", "yr_renovated", 'lat', 'long', "price")
+
+
+
+#Correlación numérica entre variables
+corr <- am_cuant %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
+
+
 ```
 
-### Analisis multivariante cuantitativo
+Gráficos de correlaciones.
+
+```{r}
+am_cuant %>% select(amc1) %>%  ggpairs(columns = 1:6)
+```
+```{r}
+am_cuant %>% select(amc2) %>% ggpairs(columns = 1:5)
+```
+
+Gráfico de colores de correlación.
+```{r}
+am_cuant1 <- am_cuant %>% select(amc1) %>% na.omit() %>% ggcorr()
+grid.arrange(am_cuant1, nrow=1)
+```
+
+### Analisis multivariante cualitativo
 
 Se estudia en dos tablas las variables cuanlitativas
 
 ```{r}
+am_cual <- train %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
+am1 <- c("bedrooms", "bathrooms","condition","grade")
+
+#Correlación numérica entre variables
+corr <- am_cual %>% select(am1) %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.1) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
 
 ```
 
@@ -256,15 +291,15 @@ my_data <- as_tibble(DataMat)
 #my_data=my_data %>% slice(1:100)
 my_data = as.data.frame(my_data)
 
-Dist_Mat<-distm(my_data,my_data,fun=distHaversine)/1000
-hclustfunc <- function(x) hclust(x, method="complete")
-distfunc <- function(x) as.dist((1-cor(t(x)))/2)
-d <- distfunc(Dist_Mat)
-fit <- hclustfunc(d)
-my_data$Clusters<- cutree(fit, h=0.25)
-train = merge(x = train, y = my_data, by = c("lat", "long") , all.x = TRUE)
-train$Clusters = as.factor(train$Clusters)
-bwplot(Clusters~price, data = train, horizontal= TRUE)
+#<-distm(my_data,my_data,fun=distHaversine)/1000
+#hclustfunc <- function(x) hclust(x, method="complete")
+#distfunc <- function(x) as.dist((1-cor(t(x)))/2)
+#d <- distfunc(Dist_Mat)
+#fit <- hclustfunc(d)
+#my_data$Clusters<- cutree(fit, h=0.25)
+#train = merge(x = train, y = my_data, by = c("lat", "long") , all.x = TRUE)
+#train$Clusters = as.factor(train$Clusters)
+#bwplot(Clusters~price, data = train, horizontal= TRUE)
 
 
 

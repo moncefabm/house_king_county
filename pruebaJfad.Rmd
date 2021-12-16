@@ -213,9 +213,20 @@ head(am_cual, 10)
 
 ```
 ```{r}
-am1 <- c("bedrooms", "bathrooms", "waterfront", "view","condition","grade","zipcode")
+#am1 <- c("bedrooms", "bathrooms","condition","grade")
 
-round(cor(am_cual[,am1]),3)
+#round(cor(am_cual[,am1]),3)
+
+#am_cual <- train %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
+#am1 <- c("bedrooms", "bathrooms","condition","grade")
+
+#Correlación numérica entre variables
+corr <- am_cual %>% select(am1) %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.1) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
+
 
 ```
 
