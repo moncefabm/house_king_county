@@ -167,7 +167,7 @@ Se estudia en dos tablas las variables cuantitativas.
 am_cuant <- train %>% select("price", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15")
 
 amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "price", "sqft_basement", "sqft_above")
-amc2 <- c("yr_built", "yr_renovated", 'lat', 'long', "price")
+amc2 <- c("yr_built", "yr_renovated", "price")
 
 
 
@@ -180,25 +180,27 @@ as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(F
 
 
 ```
+Se puede observar que las variables con mayor correlación son "sqft_above" y "sqft_living" Las correlaciones entre "sqft_living" y "sqft_living15" se debe a que "sqft_living15" se trata de la misma variable actualizada para 2015. La variable "price" como es de esperar es correlativa con "sqft_living" y "sqft_living15". Encontramos una correlación sorprendente entre "yr_built" y "sqft_above".
 
 Gráficos de correlaciones.
 
 ```{r}
 am_cuant %>% select(amc1) %>%  ggpairs(columns = 1:6)
 ```
-```{r}
-am_cuant %>% select(amc2) %>% ggpairs(columns = 1:5)
-```
 
-Gráfico de colores de correlación.
+
+
 ```{r}
 am_cuant1 <- am_cuant %>% select(amc1) %>% na.omit() %>% ggcorr()
 grid.arrange(am_cuant1, nrow=1)
 ```
+De igual forma en el anterior grafico encontramos las mismas correlaciones entre variables.
 
 ### Analisis multivariante cualitativo
 
-Se estudia en dos tablas las variables cuanlitativas
+
+
+Se estudian las correlaciones entre las variables "bedrooms", "bathrooms","condition" y "grade" ya que el resto son irrelevantes.
 
 ```{r}
 am_cual <- train %>% select("date", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode")
@@ -242,7 +244,7 @@ nrow(train)
 Nº filas coinciden sqft_living y sqft_above
 ```{r}
 sqft_compare <- train[, c(6, 13)]
-nrow(subset(sqft_compare, sqft_living == sqft_above))
+#nrow(subset(sqft_compare, sqft_living == sqft_above))
 ```
 
 ## TRASNFORMACIÓN DE VARIABLES
@@ -315,39 +317,39 @@ new_summary  <- function(lmcoef, digits) {
 }
 
 
-write_csv(train, file = "C:/Users/Moncef/Documents/house_king_county/train.csv")
+#(train, file = "C:/Users/Moncef/Documents/house_king_county/train.csv")
 
 #Convertimos las variables catageoricas en dummies para su uso en el modelo.
 
-train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
-                   remove_selected_columns = TRUE)
-
-train_v1$sqft_lot_log = log(train_v1$sqft_lot)
-train_v1$sqft_above_log = log(train_v1$sqft_above)
-train_v1$sqft_living_log = log(train_v1$sqft_living)
-train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
-#train_v1$yr_renovated_log = log(train_v1$yr_renovated)
-#train_v1$sale_tenure_log = log(train_v1$sale_tenure)
-
-
-#Incluimos en c() las variables que NO queremos usar en la regresión.
-train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
-                              sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
-
-summarize(train_v2)
-
-model <- lm(log(price_m2) ~ ., data = train_v2)
-summary(model)
-new_summary(summary(model)$coefficients, 5)
-
-plot(model, 1)
-res <- resid(model)
-plot(fitted(model), res)
-plot(model, which=1, col=c("blue"))
-plot(model, 2)
-
-require(nortest)  # Se debe haber instalado nortest
-lillie.test(model$residuals)
+# train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
+#                    remove_selected_columns = TRUE)
+# 
+# train_v1$sqft_lot_log = log(train_v1$sqft_lot)
+# train_v1$sqft_above_log = log(train_v1$sqft_above)
+# train_v1$sqft_living_log = log(train_v1$sqft_living)
+# train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
+# #train_v1$yr_renovated_log = log(train_v1$yr_renovated)
+# #train_v1$sale_tenure_log = log(train_v1$sale_tenure)
+# 
+# 
+# #Incluimos en c() las variables que NO queremos usar en la regresión.
+# train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+#                               sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
+# 
+# summarize(train_v2)
+# 
+# model <- lm(log(price_m2) ~ ., data = train_v2)
+# summary(model)
+# new_summary(summary(model)$coefficients, 5)
+# 
+# plot(model, 1)
+# res <- resid(model)
+# plot(fitted(model), res)
+# plot(model, which=1, col=c("blue"))
+# plot(model, 2)
+# 
+# require(nortest)  # Se debe haber instalado nortest
+# lillie.test(model$residuals)
 
 
 ```
