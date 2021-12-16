@@ -51,11 +51,9 @@ Lectura de datos, separación TRAIN vs TEST
 
 ```{r}
 #Cargamos los datos y definimos una muestra train y otra test
-data <- read.csv(file="C:/Users/Juanjo/Desktop/MasterDataScience/Practica/Pull1/train.csv")
 
-dt = sort(sample(nrow(data), nrow(data)*.7))
-train<-data[dt,]
-test<-data[-dt,]
+train <- as.data.frame(read.csv(file = "C:/Users/Juanjo/Desktop/MasterDataScience/Practica/Pull1/house_king_county/train.csv"))
+#test<-data[-dt,]
 summary(train)
 ```
 
@@ -217,7 +215,7 @@ as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.1) %>% subset(., abs(F
 
 ## DETECCIÓN E IMPUTACIÓN DE DATOS FALTANTES
 
-Comentar
+Se realiza un análisis de la existencia de datos faltantes.
 
 ### Datos faltantes
 
