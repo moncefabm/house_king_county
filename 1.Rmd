@@ -16,7 +16,7 @@ output:
 library(tidyr)
 library(date)
 library(zoo)
-#library(tidyverse)
+library(tidyverse)
 library(ggplot2)
 library(corrplot)
 library(caret)
@@ -39,11 +39,45 @@ library(GGally)
 
 ## INTRODUCCIÓN
 
-Comentar
+Para la realización de la práctica se ha selecionado un base de datos con los precios de viviendas del barrio King County del estado de Washington(EEUU). Base de datos descargada de: https://www.kaggle.com/swathiachath/kc-housesales-data
+Para la realización del procto se emplean las siguientes librerías.
+* tydyr
+* date
+* zoo
+* tidyverse
+* ggplot2
+* corrplot
+* caret
+* dplyr
+* olsrr
+* fastDummies
+* pracma
+* geosphere
+* readxl
+* glmnet
+* readr
+* naniar
+* gridExtra
+* grid
+* lattice
+* GGally
 
 ## OBJETIVOS
 
-Comentar
+El objetivo de la práctica será la elaboracion de un informe de un proyecto de Ciencia de Datos en R Markdown. Se emplearán las técnicas aprendidas durante el curso para el estudio del dataframe seleccionado. 
+
+###Ojbetivos generales
+
+* Analisis de la variable __"price"__ como objetivo. Se realizarán transformacioes.
+* Aplicar un modelo de regresión lineal para tratar de inferir la variable __"price"__ o sus posteriores transformaciones.
+
+###Objetivos generales
+
+1. Separación de datos en 2 grupos: train y test.
+2. Realización de un análisis exploratorio inicial del dataframe.
+3. Detección e imputación de datos faltantes.
+4. Transformación de varaibles de interés.
+5. Aplicar un modelo de regresión lineal válido la predición de la variable precio de venta.
 
 ## CARGA DE DATOS
 
