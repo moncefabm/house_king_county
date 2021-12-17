@@ -103,6 +103,58 @@ grid.arrange(p5, p6, nrow=1)
 summary(train$sqft_living15)
 ```
 
+Se estudia la variable __sqft_lot__
+```{r}
+p7 <- ggplot(train, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p8 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot), colour = "navy", fill = "steelblue")
+grid.arrange(p7, p8, nrow=1)
+summary(train$sqft_lot)
+```
+
+Se estudia la variable __sqft_lot15__
+```{r}
+p9 <- ggplot(train, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p10 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot15), colour = "navy", fill = "steelblue")
+grid.arrange(p9, p10, nrow=1)
+summary(train$sqft_lot15)
+```
+
+
+Se estudia la variable __sqft_above__
+```{r}
+p11 <- ggplot(train, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p12 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_above), colour = "navy", fill = "steelblue")
+grid.arrange(p11, p12, nrow=1)
+summary(train$sqft_above)
+```
+
+
+Se estudia la variable __sqft_basement__
+```{r}
+p13 <- ggplot(train, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p14 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_basement), colour = "navy", fill = "steelblue")
+grid.arrange(p13, p14, nrow=1)
+summary(train$sqft_basement)
+```
+
+
+Se estudia la variable __yr_built__
+```{r}
+p15 <- ggplot(train, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p16 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_built), colour = "navy", fill = "steelblue")
+grid.arrange(p15, p16, nrow=1)
+summary(train$yr_built)
+```
+
+Se estudia la variable __yr_renovated__
+```{r}
+p17 <- ggplot(train, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p18 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
+grid.arrange(p17, p18, nrow=1)
+summary(train$yr_renovated)
+```
+
+
 
 ### Variables cualitativas
 
@@ -113,21 +165,22 @@ str(var_cual)
 
 Se estudia la variable __date__
 ```{r}
-#train$date <- gsub("T000000","",as.character(train$date))
-#train$date <- as.Date(train[, 'date'],'%Y%m%d')
-#str(train$date)
+dtdate <- gsub("T000000","",as.character(train$date))
+dtdate <- as.data.frame(dtdate)
+dtdate <- as.Date(dtdate[, 'dtdate'],'%Y%m%d')
+str(dtdate)
 
-#df_dateMonth <- format(train$date,"%m")
-#df_dateYear <- format(train$date,"%Y")
-#df_dateMix <- data.frame(df_dateMonth, df_dateYear)
-#df_date2014 <- subset(df_dateMix, df_dateYear == 2014)
-#df_date2015 <- subset(df_dateMix, df_dateYear == 2015)
-#p1 <- ggplot(df_dateMix, aes(x=df_dateYear)) + geom_bar(colour = "navy", fill = "steelblue")
-#p2 <- ggplot(df_date2014, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
-#p3 <- ggplot(df_date2015, aes(x=df_dateMonth)) + geom_bar(colour = "navy", fill = "steelblue")
+Month <- format(dtdate,"%m")
+Year <- format(dtdate,"%Y")
+df_dateMix <- data.frame(Month, Year)
+df_date2014 <- subset(df_dateMix, Year == 2014)
+df_date2015 <- subset(df_dateMix, Year == 2015)
+p1 <- ggplot(df_dateMix, aes(x=Year)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("Years")
+p2 <- ggplot(df_date2014, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2014 Months")
+p3 <- ggplot(df_date2015, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2015 Months")
 
-#grid.arrange(p1, p2, p3, nrow=1)
-#summary(train$date)
+grid.arrange(p1, p2, p3, nrow=1)
+summary(dtdate)
 ```
 Se estudian las variable __bedrooms, bathrooms, floors__
 ```{r}
@@ -138,13 +191,35 @@ p3 <- ggplot(train, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue
 grid.arrange(p1, p2, p3, nrow=1)
 ```
 
+Se estudian las variable __waterfront, view__
+```{r}
+p1 <- ggplot(train, aes(x=waterfront)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=view)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudian las variable __condition, grade__
+```{r}
+p1 <- ggplot(train, aes(x=condition)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudia la variable __zipcode__
+```{r}
+ggplot(train, aes(x=zipcode)) + geom_bar(colour = "navy", fill = "steelblue")
+
+```
 
 
 ### Creación de nuevas variables
 
 __Variables__
 
-Se crean las variables _saledate, saleyear, salemonth..._
+Una vez estudiadas las variables, se crean variables en base a __price y date__ extrayendo el __año, mes, trimestre, antigüedad, años desde la renovación, y el precio por metro cuadrado.__
+
 
 ```{r}
 train$sale_date = substr(train$date, 1, 8)
@@ -159,6 +234,30 @@ train$price_m2 = train$price/train$sqft_living
 str(train)
 ```
 
+Se estudian las variable __sale_year, sale_month, sale_quarter__
+```{r}
+p1 <- ggplot(train, aes(x=sale_year)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=sale_month)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=sale_quarter)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+Se estudian las variable __sale_tenure, yr_since_last_renovated2__
+```{r}
+p1 <- ggplot(train, aes(x=sale_tenure)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=yr_since_last_renovated)) + geom_bar(colour = "navy", fill = "steelblue")
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudian las variable __price_m2__
+```{r}
+
+p3 <- ggplot(train, aes(x=price_m2)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price_m2), colour = "navy", fill = "steelblue")
+
+grid.arrange(p3, p4, nrow=1)
+```
 
 
 
@@ -296,6 +395,8 @@ nrow(subset(sqft_compare, sqft_living == sqft_above))
 trans_var <- train
 
 ```
+
+### Transformaciones
 
 Transformacion de __price__ con __log10__
 ```{r}
@@ -566,26 +667,28 @@ qqnorm(trans_var$price_m2_trans)
 qqline(trans_var$price_m2_trans)
 
 ```
-### Resumen transformaciones
 
-Transformacion de __price__ con __log10__
-Transformacion de __bedrooms__ a __dummie__, factor, y quitamos el 33
-Transformacion de __bathrooms__ a __dummie__, factor, y redondeamos hacia arriba
-Transformacion de __sqft_living__ con __log10__
-Transformacion de __sqft_lot__ con __log10__
-Transformacion de __floors__ a __dummie__, factor, y redondeamos hacia arriba
-Transformacion de __waterfront__ a __dummie__ logical
-Transformacion de __view__ a __dummie__ factor
-Transformacion de __condition__ a __dummie__ factor
-Transformacion de __grade__ a __dummie__ factor
-Transformacion de __sqft_above__ con __log10__
-Transformacion de __sqft_basement__ a __dummie__ logical
-Transformacion de __zipcode__ a __dummie__ factor
-Transformacion de __sale_quarter__ a __dummie__ factor
-Transformacion de __Clusters__ a __dummie__ factor
-Transformacion de __sale_tenure__ con __log10__
-Transformacion de __Dist_from_seattle__ con __log10__
-Transformacion de __price_m2__ con __log10__
+
+### Resumen Transformaciones
+
+-Transformacion de __price__ con __log10__
+-Transformacion de __bedrooms__ a __dummie__, factor, y quitamos el 33
+-Transformacion de __bathrooms__ a __dummie__, factor, y redondeamos hacia arriba
+-Transformacion de __sqft_living__ con __log10__
+-Transformacion de __sqft_lot__ con __log10__
+-Transformacion de __floors__ a __dummie__, factor, y redondeamos hacia arriba
+-Transformacion de __waterfront__ a __dummie__ logical
+-Transformacion de __view__ a __dummie__ factor
+-Transformacion de __condition__ a __dummie__ factor
+-Transformacion de __grade__ a __dummie__ factor
+-Transformacion de __sqft_above__ con __log10__
+-Transformacion de __sqft_basement__ a __dummie__ logical
+-Transformacion de __zipcode__ a __dummie__ factor
+-Transformacion de __sale_quarter__ a __dummie__ factor
+-Transformacion de __Clusters__ a __dummie__ factor
+-Transformacion de __sale_tenure__ con __log10__
+-Transformacion de __Dist_from_seattle__ con __log10__
+-Transformacion de __price_m2__ con __log10__
 
 
 
