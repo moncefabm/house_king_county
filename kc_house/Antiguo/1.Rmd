@@ -1,0 +1,1136 @@
+---
+title: "Practica Fundamentos"
+author: "Juan - Jose - Moncef"
+date: "17/12/2021"
+output:
+  html_document:
+    theme: united
+    code_folding: "hide"
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+#Librerias
+
+library(MASS)
+library(emmeans)
+library(stargazer)
+library(nortest)
+library(tidyr)
+library(date)
+library(zoo)
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(caret)
+library(dplyr)
+library(olsrr)
+library(fastDummies)
+library(pracma)
+library(geosphere)
+library(readxl)
+library(glmnet)
+library(mice)
+library(missForest)
+library(VIM)
+library(readr)
+library(naniar)
+library(gridExtra)
+library(grid)
+library(lattice)
+library(GGally)
+```
+
+## INTRODUCCIÓN
+
+Para la realización de la práctica se ha selecionado un base de datos con los precios de viviendas del barrio King County del estado de Washington(EEUU). Base de datos descargada de: https://www.kaggle.com/swathiachath/kc-housesales-data
+Para la realización del procto se emplean las siguientes librerías.
+* MASS
+* emmeans
+* stargazer
+* nortest
+* tydyr
+* date
+* zoo
+* tidyverse
+* ggplot2
+* corrplot
+* caret
+* dplyr
+* olsrr
+* fastDummies
+* pracma
+* geosphere
+* readxl
+* glmnet
+* mice
+* missForest
+* VIM
+* readr
+* naniar
+* gridExtra
+* grid
+* lattice
+* GGally
+
+## OBJETIVOS
+
+El objetivo de la práctica será la elaboracion de un informe de un proyecto de Ciencia de Datos en R Markdown. Se emplearán las técnicas aprendidas durante el curso para el estudio del dataframe seleccionado. 
+
+###Ojbetivos generales
+
+* Analisis de la variable __"price"__ como objetivo. Se realizarán transformacioes.
+* Aplicar un modelo de regresión lineal para tratar de inferir la variable __"price"__ o sus posteriores transformaciones.
+
+###Objetivos generales
+
+1. Separación de datos en 2 grupos: train y test.
+2. Realización de un análisis exploratorio inicial del dataframe.
+3. Detección e imputación de datos faltantes.
+4. Transformación de varaibles de interés.
+5. Aplicar un modelo de regresión lineal válido la predición de la variable precio de venta.
+
+## CARGA DE DATOS
+
+Lectura de datos, separación TRAIN vs TEST
+
+```{r}
+#Cargamos los datos y definimos una muestra train y otra test
+
+train <- as.data.frame(read.csv(file = 'C:/Users/Juanjo/Desktop/MasterDataScience/Practica/PullBueno/otra/train.csv'))
+
+```
+
+## ANÁLISIS EDA
+
+Se realiza un análisis exploratorio inicial para observar las varaibles.
+
+
+### Analisis de datos actuales
+
+__Datos actuales__
+
+```{r}
+str(train)
+```
+
+### Variables cuantitativas
+
+```{r}
+var_cuant <- train[, c("price", "sqft_living", "sqft_living15", "sqft_lot", "sqft_lot15", "sqft_above", "sqft_basement", "yr_built", "yr_renovated")]
+str(var_cuant)
+```
+
+
+Se estudia la variable __precio__
+```{r}
+p1 <- ggplot(train, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price), colour = "navy", fill = "steelblue")
+grid.arrange(p1, p2, nrow=1)
+summary(train$price)
+```
+
+Se estudia la variable __sqft_living__
+```{r}
+p3 <- ggplot(train, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living), colour = "navy", fill = "steelblue")
+grid.arrange(p3, p4, nrow=1)
+summary(train$sqft_living)
+```
+
+
+Se estudia la variable __sqft_living15__
+```{r}
+p5 <- ggplot(train, aes(x=sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p6 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living15), colour = "navy", fill = "steelblue")
+grid.arrange(p5, p6, nrow=1)
+summary(train$sqft_living15)
+```
+
+Se estudia la variable __sqft_lot__
+```{r}
+p7 <- ggplot(train, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p8 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot), colour = "navy", fill = "steelblue")
+grid.arrange(p7, p8, nrow=1)
+summary(train$sqft_lot)
+```
+
+Se estudia la variable __sqft_lot15__
+```{r}
+p9 <- ggplot(train, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p10 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot15), colour = "navy", fill = "steelblue")
+grid.arrange(p9, p10, nrow=1)
+summary(train$sqft_lot15)
+```
+
+
+Se estudia la variable __sqft_above__
+```{r}
+p11 <- ggplot(train, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p12 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_above), colour = "navy", fill = "steelblue")
+grid.arrange(p11, p12, nrow=1)
+summary(train$sqft_above)
+```
+
+
+Se estudia la variable __sqft_basement__
+```{r}
+p13 <- ggplot(train, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p14 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_basement), colour = "navy", fill = "steelblue")
+grid.arrange(p13, p14, nrow=1)
+summary(train$sqft_basement)
+```
+
+
+Se estudia la variable __yr_built__
+```{r}
+p15 <- ggplot(train, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p16 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_built), colour = "navy", fill = "steelblue")
+grid.arrange(p15, p16, nrow=1)
+summary(train$yr_built)
+```
+
+Se estudia la variable __yr_renovated__
+```{r}
+p17 <- ggplot(train, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p18 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
+grid.arrange(p17, p18, nrow=1)
+summary(train$yr_renovated)
+```
+
+
+
+### Variables cualitativas
+
+```{r}
+var_cual <- train[, c("date", "bedrooms", "bathrooms", "floors", "waterfront" , "view" , "condition", "grade", "zipcode")]
+str(var_cual)
+```
+
+Se estudia la variable __date__
+```{r}
+dtdate <- gsub("T000000","",as.character(train$date))
+dtdate <- as.data.frame(dtdate)
+dtdate <- as.Date(dtdate[, 'dtdate'],'%Y%m%d')
+str(dtdate)
+
+Month <- format(dtdate,"%m")
+Year <- format(dtdate,"%Y")
+df_dateMix <- data.frame(Month, Year)
+df_date2014 <- subset(df_dateMix, Year == 2014)
+df_date2015 <- subset(df_dateMix, Year == 2015)
+p1 <- ggplot(df_dateMix, aes(x=Year)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("Years")
+p2 <- ggplot(df_date2014, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2014 Months")
+p3 <- ggplot(df_date2015, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2015 Months")
+
+grid.arrange(p1, p2, p3, nrow=1)
+summary(dtdate)
+```
+Se estudian las variable __bedrooms, bathrooms, floors__
+```{r}
+p1 <- ggplot(train, aes(x=bedrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=bathrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+Se estudian las variable __waterfront, view__
+```{r}
+p1 <- ggplot(train, aes(x=waterfront)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=view)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudian las variable __condition, grade__
+```{r}
+p1 <- ggplot(train, aes(x=condition)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudia la variable __zipcode__
+```{r}
+ggplot(train, aes(x=zipcode)) + geom_bar(colour = "navy", fill = "steelblue")
+
+```
+
+
+### Creación de nuevas variables
+
+__Variables__
+
+Una vez estudiadas las variables, se crean variables en base a __price y date__ extrayendo el __año, mes, trimestre, antigüedad, años desde la renovación, y el precio por metro cuadrado.__
+
+
+```{r}
+train$sale_date = substr(train$date, 1, 8)
+train = transform(train, sale_date = as.Date(as.character(sale_date), "%Y%m%d"))
+train$sale_year = as.numeric(format(train$sale_date, format="%Y"))
+train$sale_month = format(train$sale_date, format="%m")
+train$sale_quarter = as.yearqtr(train$sale_date)
+train$sale_quarter = str_sub(train$sale_quarter,-2,-1)
+train$sale_tenure =  as.numeric(train$sale_year) - train$yr_built
+train$yr_since_last_renovated = ifelse(train$sale_year - train$yr_renovated > 2013, 0, train$sale_year - train$yr_renovated)
+train$price_m2 = train$price/train$sqft_living
+str(train)
+```
+
+Se estudian las variable __sale_year, sale_month, sale_quarter__
+```{r}
+p1 <- ggplot(train, aes(x=sale_year)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=sale_month)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=sale_quarter)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+Se estudian las variable __sale_tenure, yr_since_last_renovated2__
+```{r}
+p1 <- ggplot(train, aes(x=sale_tenure)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=yr_since_last_renovated)) + geom_bar(colour = "navy", fill = "steelblue")
+grid.arrange(p1, p2, nrow=1)
+```
+
+Se estudian las variable __price_m2__
+```{r}
+
+p3 <- ggplot(train, aes(x=price_m2)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price_m2), colour = "navy", fill = "steelblue")
+
+grid.arrange(p3, p4, nrow=1)
+```
+
+
+
+### Analisis multivariante cuantitativo
+
+Se estudia la correlación entre las variables __sqft_living"__, __"sqft_lot"__, __"sqft_living15"__, __"sqft_basement"__, __"sqft_above"__, __"price"__, __"price_m2"__, __"Dist_from_seattle"__ y __"Sale_tenure"__.
+```{r}
+am_cuant <- train %>% select("price","Dist_from_seattle","price_m2", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "sqft_living15", "sqft_lot15","sale_tenure")
+
+amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "sqft_basement", "sqft_above","price","price_m2","Dist_from_seattle","sale_tenure")
+amc2 <- c("yr_built", "yr_renovated", "price")
+
+
+
+#Correlación numérica entre variables
+corr <- am_cuant %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
+```
+Se puede observar que las variables con mayor correlación son:
+__"sqft_above"__ y __"sqft_living"__
+__"sqft_living15"__ y __"sqft_linving"__. Se debe a que es la misma variable actualizada.
+__"price_m2"__ y __"price"__. 
+__"yr_built"__ y __"sqft_above"__. Sorprendente. Puede deberse a normativa.
+
+
+```{r}
+am_cuant1 <- am_cuant %>% select(amc1) %>% na.omit() %>% ggcorr()
+grid.arrange(am_cuant1, nrow=1)
+```
+De igual forma en el anterior grafico encontramos las mismas correlaciones entre variables.
+
+
+Relación entre la variable __"sqft_above" y "sqft_living"__.
+```{r}
+ggplot(train,aes(x=sqft_above,y=sqft_living))+geom_point(alpha=0.5)+geom_smooth()
+```
+Relación entre  __"sqft_living"__ y __"sqft_living15"__.
+```{r}
+ggplot(train,aes(x=sqft_living,y=sqft_living15))+geom_point()+geom_smooth()
+```
+
+Relación entre  __"Dist_from_seattle"__ y __"price_m2"__.
+```{r}
+ggplot(train,aes(x=Dist_from_seattle,y=price_m2))+geom_point()+geom_smooth()
+
+```
+Podemos observar que existe una relación entre el precio por metro cuadrado de la vivienda con su cercanía al centro de Seattle.
+
+Relación entre __"Dist_from_seattle" y "price"__.
+```{r}
+ggplot(train,aes(x=Dist_from_seattle,y=price))+geom_point()+geom_smooth()
+
+```
+A pesar de ser menor la correlación, la distribución con __"price_m2"__ se relaciona más con la distancia al centro de Seattle.
+
+Relación entre __"sqft_above" y "price"__
+```{r}
+ggplot(train,aes(x=sqft_above,y=price))+geom_point(alpha=0.5)+geom_smooth()
+```
+Relación entre __"sqft_living" y "price"__
+```{r}
+ggplot(train,aes(x=sqft_living,y=price))+geom_point(alpha=0.5)+geom_smooth()
+```
+
+
+Relación entre la variable __"sqft_above" y "price_m2"__.
+```{r}
+ggplot(train,aes(x=sqft_above,y=price_m2))+geom_point(alpha=0.5)+geom_smooth()
+
+```
+Relación entre la variable __"sqft_living" y "price_m2"__.
+```{r}
+ggplot(train,aes(x=sqft_living,y=price_m2))+geom_point(alpha=0.5)+geom_smooth()
+```
+
+### Analisis multivariante cualitativo
+
+Se estudian las correlaciones entre las variables cualitativas _"bedrooms", "bathrooms","condition" y "grade" __.Incluimos la variable __"sale_tenure"__
+```{r}
+am_cual <- train %>% select("date","sale_date", "sale_year", "sale_month", "bedrooms", "bathrooms", "waterfront", "view", "condition", "grade", "zipcode","lat", "long","price","price_m2","sale_tenure")
+am1 <- c("bedrooms", "bathrooms","condition","grade","price","price_m2","sale_tenure")
+
+#Correlación numérica entre variables
+corr <- am_cual %>% select(am1) %>% na.omit() %>% cor()
+
+#Correlaciones importantes
+as.data.frame(as.table(corr)) %>% subset(., abs(Freq) > 0.4) %>% subset(., abs(Freq) != 1) %>% .[order(.$Freq, decreasing = TRUE),] %>%
+  .[c(seq(1, nrow(.), by=2)),]
+
+```
+
+
+```{r}
+am_cual1 <- am_cual %>% select(am1) %>% na.omit() %>% ggcorr()
+grid.arrange(am_cual1, nrow=1)
+```
+Se encuentra una correlación alta entre __"bathrooms"__ y __"grade"__
+```{r}
+ggplot(train,aes(x=bathrooms,y=grade))+geom_point()+geom_smooth()
+```
+Se encuentra una correlación alta entre __"bedrooms"__ y __"grade"__
+```{r}
+ggplot(train,aes(x=bedrooms,y=grade,))+geom_point()+geom_smooth()+scale_x_continuous(limits=c(1,10))
+
+```
+
+Relación entre __"grade" y "price"__.
+```{r}
+ggplot(train,aes(x=grade,y=price))+geom_point()+geom_smooth()
+```
+Relación entre __"grade" y "price_m2"__.
+```{r}
+ggplot(train,aes(x=grade,y=price_m2))+geom_point()+geom_smooth()
+```
+
+
+```{r}
+ggplot(train,aes(x=grade,y=price_m2))+geom_point()+geom_smooth()
+
+```
+
+
+## DETECCIÓN E IMPUTACIÓN DE DATOS FALTANTES
+
+Se realiza un análisis de la existencia de datos faltantes.
+
+### Datos faltantes
+
+
+Se genera un 5% de datos faltantes en las variables __"grade", "sqft_living15" y "sqft_basement"__.
+```{r}
+miss <- c("grade", "sqft_living15","sqft_basement")
+train_na <- train %>% select(miss)
+train_miss <- prodNA(train_na, 0.05)
+
+var <- c("lat", "long", "id", "date", "price","bedrooms","bathrooms","sqft_living","sqft_lot", "floors","view","waterfront", "condition","sqft_above","sqft_lot15","yr_built","yr_renovated","zipcode","sale_date","sale_year","sale_month","sale_quarter","sale_tenure","yr_since_last_renovated","price_m2","Dist_from_seattle")
+
+train_new <- train %>% select(var)
+
+train_miss_new <- cbind(train_miss,train_new)
+colSums(is.na(train_miss_new))
+```
+
+
+
+Datos de las variables con valor = __0__
+```{r}
+colSums(train==0)
+```
+
+Análisis del patron de datos faltantes.
+```{r}
+mice_plot <- aggr(train_miss_new, col=c('navyblue','yellow'),
+                    numbers=TRUE, sortVars=TRUE,
+                    labels=names(train_miss_new), cex.axis=.7,
+                    gap=1, ylab=c("Missing data","Pattern"))
+```
+### Imputación de datos faltantes
+
+```{r}
+imputed <- train_miss_new %>% select(grade, bathrooms, bedrooms,price) %>% VIM::kNN(variable='grade')
+imputed <- train_miss_new %>% select(sqft_basement, sqft_living, sqft_above,bedrooms, bathrooms,price) %>% VIM::kNN(variable='sqft_basement')
+imputed <- train_miss_new %>% select(sqft_living15, sqft_living, sqft_above, bathrooms, bedrooms, price) %>% VIM::kNN(variable='sqft_living15')
+
+
+train_miss_new$grade <- imputed$grade
+train_miss_new$sqft_basement <- imputed$sqft_basement
+train_miss_new$sqft_living15 <- imputed$sqft_living15
+train_miss_new
+```
+
+
+
+Nº filas coinciden sqft_living y sqft_above
+```{r}
+sqft_compare <- train[, c("sqft_living", "sqft_above")]
+nrow(subset(sqft_compare, sqft_living == sqft_above))
+```
+
+## TRANSFORMACIÓN DE VARIABLES
+
+
+```{r}
+
+#Creamos dataframe que incluya las variables sin modificar y transformadas
+
+trans_var <- train
+
+```
+
+### Transformaciones
+
+Transformacion de __price__ con __log10__
+```{r}
+
+#Transformacion price con log10
+
+price_trans <- log10(trans_var$price)
+trans_var <- mutate(train, price_trans)
+
+p1 <- ggplot(trans_var, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=price_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$price)
+qqline(trans_var$price)
+qqnorm(trans_var$price_trans)
+qqline(trans_var$price_trans)
+
+```
+
+Transformacion de __bedrooms__ a __dummie__, factor, y quitamos el 33
+```{r}
+
+#Transformacion bedrooms a dummie, factor, y quitamos el 33
+
+trans_var$bedrooms= as.factor(trans_var$bedrooms)
+df_bedrooms <- trans_var[, c("price", "bedrooms")]
+df_bedrooms <- subset(df_bedrooms, bedrooms != 33)
+ggplot(df_bedrooms, aes(x=price, color=bedrooms, fill=bedrooms)) + geom_density(alpha=.2)
+ggplot(df_bedrooms, aes(x=bedrooms, y=price, fill=bedrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __bathrooms__ a __dummie__, factor, y redondeamos hacia arriba
+```{r}
+
+#Transformacion bathrooms, redondeamos arriba y transformamos a factor
+
+df_bathrooms <- trans_var[, c("price", "bathrooms")]
+df_bathrooms$bathrooms <- ceiling(df_bathrooms$bathrooms)
+trans_var$bathrooms= as.factor(df_bathrooms$bathrooms)
+df_bathrooms$bathrooms= as.factor(df_bathrooms$bathrooms)
+ggplot(df_bathrooms, aes(x=price, color=bathrooms, fill=bathrooms)) + geom_density(alpha=.2)
+ggplot(df_bathrooms, aes(x=bathrooms, y=price, fill=bathrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __sqft_living__ con __log10__
+```{r}
+
+#Transformacion sqft_living con log10
+
+sqft_living_trans <- log10(trans_var$sqft_living)
+trans_var <- mutate(train, sqft_living_trans)
+
+p1 <- ggplot(trans_var, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=sqft_living_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$sqft_living)
+qqline(trans_var$sqft_living)
+qqnorm(trans_var$sqft_living_trans)
+qqline(trans_var$sqft_living_trans)
+
+```
+
+Transformacion de __sqft_lot__ con __log10__
+```{r}
+
+#Transformacion sqft_lot con log10
+
+sqft_lot_trans <- log10(trans_var$sqft_lot)
+trans_var <- mutate(train, sqft_lot_trans)
+
+p1 <- ggplot(trans_var, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=sqft_lot_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$sqft_lot)
+qqline(trans_var$sqft_lot)
+qqnorm(trans_var$sqft_lot_trans)
+qqline(trans_var$sqft_lot_trans)
+
+```
+
+Transformacion de __floors__ a __dummie__, factor, y redondeamos hacia arriba
+```{r}
+
+#Transformacion floors, redondeamos arriba y transformamos a factor
+
+df_floors <- trans_var[, c("price", "floors")]
+df_floors$floors <- ceiling(df_floors$floors)
+trans_var$floors= as.factor(df_floors$floors)
+df_floors$floors= as.factor(df_floors$floors)
+ggplot(df_floors, aes(x=price, color=floors, fill=floors)) + geom_density(alpha=.2)
+ggplot(df_floors, aes(x=floors, y=price, fill=floors)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __waterfront__ a __dummie__ logical
+```{r}
+
+#Transformacion waterfront a dummie, logical
+
+trans_var$waterfront = as.logical(trans_var$waterfront)
+df_waterfront <- trans_var[, c("price", "waterfront")]
+ggplot(df_waterfront, aes(x=price, color=waterfront, fill=waterfront)) + geom_density(alpha=.2)
+ggplot(df_waterfront, aes(x=waterfront, y=price, fill=waterfront)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __view__ a __dummie__ factor
+```{r}
+
+#Transformacion view a dummie, factor
+
+trans_var$view= as.factor(trans_var$view)
+df_view <- trans_var[, c("price", "view")]
+ggplot(df_view, aes(x=price, color=view, fill=view)) + geom_density(alpha=.2)
+ggplot(df_view, aes(x=view, y=price, fill=view)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __condition__ a __dummie__ factor
+```{r}
+
+#Transformacion condition a dummie, factor
+
+trans_var$condition= as.factor(trans_var$condition)
+df_condition <- trans_var[, c("price", "condition")]
+ggplot(df_condition, aes(x=price, color=condition, fill=condition)) + geom_density(alpha=.2)
+ggplot(df_condition, aes(x=condition, y=price, fill=condition)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __grade__ a __dummie__ factor
+```{r}
+
+#Transformacion grade a dummie, factor
+
+trans_var$grade= as.factor(trans_var$grade)
+df_grade <- trans_var[, c("price", "grade")]
+ggplot(df_grade, aes(x=price, color=grade, fill=grade)) + geom_density(alpha=.2)
+ggplot(df_grade, aes(x=grade, y=price, fill=grade)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __sqft_above__ con __log10__
+```{r}
+
+#Transformacion sqft_above con log10
+
+sqft_above_trans <- log10(trans_var$sqft_above)
+trans_var <- mutate(train, sqft_above_trans)
+
+p1 <- ggplot(trans_var, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=sqft_above_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$sqft_above)
+qqline(trans_var$sqft_above)
+qqnorm(trans_var$sqft_above_trans)
+qqline(trans_var$sqft_above_trans)
+
+```
+
+Transformacion de __sqft_basement__ a __dummie__ logical
+```{r}
+
+#Transformacion sqft_basement a dummie, logical
+
+sqft_basement_trans <- cut(trans_var$sqft_basement, breaks = c(-1, 1, Inf), labels = c("0", "1"), right = FALSE)
+trans_var <- mutate(train, sqft_basement_trans)
+trans_var$sqft_basement_trans= as.integer(trans_var$sqft_basement_trans)
+trans_var$sqft_basement_trans= as.integer(trans_var$sqft_basement_trans-1)
+trans_var$sqft_basement_trans= as.logical(trans_var$sqft_basement_trans)
+df_sqft_basement_trans <- trans_var[, c("price", "sqft_basement_trans")]
+ggplot(df_sqft_basement_trans, aes(x=price, color=sqft_basement_trans, fill=sqft_basement_trans)) + geom_density(alpha=.2)
+ggplot(df_sqft_basement_trans, aes(x=sqft_basement_trans, y=price, fill=sqft_basement_trans)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __zipcode__ a __dummie__ factor
+```{r}
+
+#Transformacion zipcode a dummie, factor
+
+trans_var$zipcode= as.factor(trans_var$zipcode)
+df_zipcode <- trans_var[, c("price", "zipcode")]
+ggplot(df_zipcode, aes(x=price, color=zipcode, fill=zipcode)) + geom_density(alpha=.2)
+ggplot(df_zipcode, aes(x=zipcode, y=price, fill=zipcode)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __sale_quarter__ a __dummie__ factor
+```{r}
+
+#Transformacion sale_quarter a dummie, factor
+
+trans_var$sale_quarter= as.factor(trans_var$sale_quarter)
+df_sale_quarter <- trans_var[, c("price", "sale_quarter")]
+ggplot(df_sale_quarter, aes(x=price, color=sale_quarter, fill=sale_quarter)) + geom_density(alpha=.2)
+ggplot(df_sale_quarter, aes(x=sale_quarter, y=price, fill=sale_quarter)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __Clusters__ a __dummie__ factor
+```{r}
+
+#Transformacion Clusters a dummie, factor
+
+trans_var$Clusters= as.factor(trans_var$Clusters)
+df_Clusters <- trans_var[, c("price", "Clusters")]
+ggplot(df_Clusters, aes(x=price, color=Clusters, fill=Clusters)) + geom_density(alpha=.2)
+ggplot(df_Clusters, aes(x=Clusters, y=price, fill=Clusters)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+```
+
+Transformacion de __sale_tenure__ con __log10__
+```{r}
+
+#Transformacion sale_tenure con log10
+
+sale_tenure_trans <- log10(trans_var$sale_tenure)
+trans_var <- mutate(train, sale_tenure_trans)
+
+p1 <- ggplot(trans_var, aes(x=sale_tenure)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=sale_tenure_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+```
+
+Transformacion de __Dist_from_seattle__ con __log10__
+```{r}
+
+#Transformacion Dist_from_seattle con log10
+
+Dist_from_seattle_trans <- log10(trans_var$Dist_from_seattle)
+trans_var <- mutate(train, Dist_from_seattle_trans)
+
+p1 <- ggplot(trans_var, aes(x=Dist_from_seattle)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=Dist_from_seattle_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$Dist_from_seattle)
+qqline(trans_var$Dist_from_seattle)
+qqnorm(trans_var$Dist_from_seattle_trans)
+qqline(trans_var$Dist_from_seattle_trans)
+
+
+```
+
+Transformacion de __price_m2__ con __log10__
+```{r}
+
+#Transformacion price_m2 con log10
+
+price_m2_trans <- log10(trans_var$price_m2)
+trans_var <- mutate(train, price_m2_trans)
+
+p1 <- ggplot(trans_var, aes(x=price_m2)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=price_m2_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(trans_var$price_m2)
+qqline(trans_var$price_m2)
+qqnorm(trans_var$price_m2_trans)
+qqline(trans_var$price_m2_trans)
+
+```
+
+
+### Resumen Transformaciones
+
+-Transformacion de __price__ con __log10__
+-Transformacion de __bedrooms__ a __dummie__, factor, y quitamos el 33
+-Transformacion de __bathrooms__ a __dummie__, factor, y redondeamos hacia arriba
+-Transformacion de __sqft_living__ con __log10__
+-Transformacion de __sqft_lot__ con __log10__
+-Transformacion de __floors__ a __dummie__, factor, y redondeamos hacia arriba
+-Transformacion de __waterfront__ a __dummie__ logical
+-Transformacion de __view__ a __dummie__ factor
+-Transformacion de __condition__ a __dummie__ factor
+-Transformacion de __grade__ a __dummie__ factor
+-Transformacion de __sqft_above__ con __log10__
+-Transformacion de __sqft_basement__ a __dummie__ logical
+-Transformacion de __zipcode__ a __dummie__ factor
+-Transformacion de __sale_quarter__ a __dummie__ factor
+-Transformacion de __Clusters__ a __dummie__ factor
+-Transformacion de __sale_tenure__ con __log10__
+-Transformacion de __Dist_from_seattle__ con __log10__
+-Transformacion de __price_m2__ con __log10__
+
+
+
+```{r}
+
+#Tranfomación de variables
+
+train$waterfront = as.factor(train$waterfront)
+train$view = as.factor(train$view)
+train$zipcode = as.factor(train$zipcode)
+
+
+#Creamos una variable que mide la distnacia de cada casa a la venta con respecto al centro ecónomico de la ciudad: Seattle
+seattle = c(-122.335167, 47.608013)
+train = mutate(train, Dist_from_seattle=distHaversine(cbind(long, lat),seattle))
+
+#POr otro lado, se calcula la distancia de cada casa con respecto al resto, agrupando después casas cercanas en clústers.
+long= train$long
+lat = train$lat
+DataMat<-as.matrix(cbind(long, lat))
+DataMat[is.na(DataMat)]<-0
+
+my_data <- as_tibble(DataMat)
+#my_data=my_data %>% slice(1:100)
+my_data = as.data.frame(my_data)
+
+#<-distm(my_data,my_data,fun=distHaversine)/1000
+#hclustfunc <- function(x) hclust(x, method="complete")
+#distfunc <- function(x) as.dist((1-cor(t(x)))/2)
+#d <- distfunc(Dist_Mat)
+#fit <- hclustfunc(d)
+#my_data$Clusters<- cutree(fit, h=0.25)
+#train = merge(x = train, y = my_data, by = c("lat", "long") , all.x = TRUE)
+#train$Clusters = as.factor(train$Clusters)
+#bwplot(Clusters~price, data = train, horizontal= TRUE)
+
+
+
+
+#specify_decimal
+specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
+
+#beautifying summary.lm
+new_summary  <- function(lmcoef, digits) {
+  
+  coefs <- as.data.frame(lmcoef)
+  coefs[] <- lapply(coefs, function(x) specify_decimal(x, digits))
+  coefs
+  
+}
+
+
+#(train, file = "C:/Users/Moncef/Documents/house_king_county/train.csv")
+
+#Convertimos las variables catageoricas en dummies para su uso en el modelo.
+
+# train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
+#                    remove_selected_columns = TRUE)
+# 
+# train_v1$sqft_lot_log = log(train_v1$sqft_lot)
+# train_v1$sqft_above_log = log(train_v1$sqft_above)
+# train_v1$sqft_living_log = log(train_v1$sqft_living)
+# train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
+# #train_v1$yr_renovated_log = log(train_v1$yr_renovated)
+# #train_v1$sale_tenure_log = log(train_v1$sale_tenure)
+# 
+# 
+# #Incluimos en c() las variables que NO queremos usar en la regresión.
+# train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+#                               sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
+# 
+# summarize(train_v2)
+# 
+# model <- lm(log(price_m2) ~ ., data = train_v2)
+# summary(model)
+# new_summary(summary(model)$coefficients, 5)
+# 
+# plot(model, 1)
+# res <- resid(model)
+# plot(fitted(model), res)
+# plot(model, which=1, col=c("blue"))
+# plot(model, 2)
+# 
+# require(nortest)  # Se debe haber instalado nortest
+# lillie.test(model$residuals)
+
+
+```
+
+
+## ANÁLISIS DEL MODELO
+
+
+En este apartado, hemos estimado varios modelos a partir de distintas metodologías para poder comparar cual de ellos nos arroja mejores resultados, esto es, menor error cuadratico medio. Para ello, se han estimado los siguientes modelos:
+
+- Modelo inicial con la variable respuesta "price": se trata del modelo con la variable original "price" y sin las variables "Cluster" y "Dist_from_Seattle". Es un modelo inicial de partida para ver como mejora o empeora el R2 al añadir nuevas variables o una transformación de la variable respuesta.
+
+- Modelo con la variables respuesta "log_price_m2" : en este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", variable con mucha dispersión.
+
+- Modelo con la variables respuesta sugeridas por la regresión LASSO : en este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
+
+- Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC : en este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas que mayor aportación tienen en términos de reducción del AIC.
+
+
+Para los dos modelos iniciales, la metodología de selección de variables ha sido similar a un proceso "backwards". Se han introducido todas las variables (previa limpiza de aquellas con mayor correlación entre si) y se ha estimado el modelo. Para aquellas variables que el modelo consideraba que no son significativas, estas son eliminadas y se estima un nuevo modelo. Este proceso se repite de forma recursiva hasta que todas las variables incluidas resulten significativas. 
+
+
+```{r}
+#train <- as.data.frame(read.csv(file = 'C:/Users/n0375471/OneDrive - Liberty Mutual/Documentos/house_king_county/house_king_county-Moncef/train.csv'))
+```
+
+
+```{r, include=FALSE}
+
+#Convertimos las variables ctageoricas en dummies para su uso en el modelo.
+
+train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
+                   remove_selected_columns = TRUE)
+
+train_v1$sqft_lot_log = log(train_v1$sqft_lot)
+train_v1$sqft_above_log = log(train_v1$sqft_above)
+train_v1$sqft_living_log = log(train_v1$sqft_living)
+train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
+#train_v1$yr_renovated_log = log(train_v1$yr_renovated)
+#train_v1$sale_tenure_log = log(train_v1$sale_tenure)
+
+#specify_decimal
+specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
+
+#beautifying summary.lm
+new_summary  <- function(lmcoef, digits) {
+  
+  coefs <- as.data.frame(lmcoef)
+  coefs[] <- lapply(coefs, function(x) specify_decimal(x, digits))
+  coefs
+  
+}
+
+
+```
+
+
+
+#Modelo inicial con la variable respuesta "price".
+
+
+Estimamos el modelo con la variable original "price" y sin las variables "Cluster" y "Dist_from_Seattle". Es un modelo inicial de partida para ver como mejora o empeora el R2 al añadir nuevas variables o una transformación de la variable respuesta:
+
+```{r}
+
+#Incluimos en c() las variables que NO queremos usar en la regresiÃ³n.
+train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,
+                                     yr_renovated,sqft_living,Dist_from_seattle,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+                                     sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15,price_m2,Dist_from_seattle_log, 
+                                     Clusters_1,      
+Clusters_3, 
+Clusters_4,      
+Clusters_5,   
+Clusters_6,      
+Clusters_7,   
+Clusters_8,      
+Clusters_9,   
+Clusters_10,      
+Clusters_11,   
+Clusters_12,      
+Clusters_13,      
+Clusters_8))
+
+model_inicial <- lm(price ~ ., data = train_v2)
+summary(model_inicial)
+new_summary(summary(model_inicial )$coefficients, 5)
+
+
+plot(model_inicial , which=1, col=c("blue"))
+plot(model_inicial , 2)
+
+
+```
+
+
+```{r}
+
+#Test bondad del auste para los residuos
+
+require(nortest)  # Se debe haber instalado nortest
+(lillie.test(model_inicial $residuals))
+
+
+```
+
+En este primer modelo, podemos ver que el R2 ajustado es del 57%. Por otra parte, el grafico de los residuos muestra cierta tendencía, lo que nos puede indicar que hay algún tipo de relación no lineal entre los regresores y la variable independiente. Por último, tanto  Q-Q plot como el test de bondad de ajuste realizado sobre los residuos nos hacen rechazar la hipótesis nula de normalidad de los residuos. 
+
+
+
+
+#Modelo con la variables respuesta "log_price_m2"
+
+En este apartado estimamos un modelo con la variables respuesta "log_price_m2". Para este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", la cual presenta una gran dispersión.
+
+```{r}
+
+#Incluimos en c() las variables que NO queremos usar en la regresiÃ³n.
+train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
+                              sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
+
+
+model <- lm(log(price_m2) ~ ., data = train_v2)
+summary(model)
+new_summary(summary(model)$coefficients, 5)
+
+plot(model, which=1, col=c("blue"))
+plot(model, 2)
+
+require(nortest)  # Se debe haber instalado nortest
+lillie.test(model$residuals)
+
+
+
+```
+
+```{r}
+
+#Test bondad del auste para los residuos del modelo con log_price_m2
+
+require(nortest)  # Se debe haber instalado nortest
+(lillie.test(model $residuals))
+
+
+```
+
+En este segundo modelo, podemos ver que el R2 ajustado es del 71%, 14% puntos mayor al modelo inicial. Por otra parte, el grafico de los residuos no muestra una tendencía como el modelo anterior y parece que los residuos fluctuan alrededor de la media, siendo la varianza relativamente constante.
+
+No obstante, tanto el Q-Q plot como el test de bondad de ajuste realizado sobre los residuos nos hacen rechazar la hipótesis nula de normalidad de los residuos. 
+
+
+#Modelo con la variables respuesta sugeridas por la regresión LASSO
+
+Para este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
+
+
+```{r, include=FALSE}
+
+train_v2_nona <- na.omit(train_v2)
+
+x <- model.matrix(log(train_v2_nona$price_m2)~., train_v2_nona )[,-1]
+y <- log(train_v2_nona$price_m2)
+
+
+lambdas <- model.matrix(log(price_m2) ~., data = train_v2_nona)
+
+
+```
+
+
+
+```{r}
+
+# Ajuste de la funciÃ³n de error
+cv_lasso <- cv.glmnet(x = lambdas, y = y, alpha = 1)
+plot(cv_lasso)
+
+
+out_eleven <- glmnet(lambdas,y,alpha=1,lambda = cv_lasso$lambda.1se)
+out_eleven
+coef(out_eleven )
+cv_lasso
+
+
+```
+
+Observamos que la regresión LASSO minimiza el error con 29 variables, si bien con 25 variables el error apenas incrementa. A partir de esta 25 variables propuestas por esta metodología, estimamos un nuevo modelo y realizamos un test de bondad del ajuste sobre sus residuos:
+
+
+```{r}
+
+# Test de normalidad de residuos
+preds_lasso <- predict(out_eleven,lambdas)
+residuals_lasso <- y - preds_lasso
+lillie.test(residuals_lasso)
+
+rsq_lasso <- cor(y, preds_lasso)^2
+sprintf("R2 = %f", rsq_lasso)
+
+
+```
+
+
+Nuevamente rechzamos la hipótesis de normalidad de los residuos. Por otra parte el R2 de este modelo ha bajado en 1% respecto al modelo anterior, situandose en el 70.6%
+
+
+#Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC
+
+En este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas que mayor aportación tienen en términos de reducción del AIC.
+
+```{r}
+
+#Analisis de variables candidatas 
+step_model <- stepAIC(model, trace = TRUE, direction= "both")
+#stargazer(model, step_model, type = "text")
+
+
+```
+
+Observamos que a partir de la variable "bathrooms", el aporte del resto de variables a la redución del AIC es mínimo. Estableciendo el humbral de forma arbitraria en 5.5, estimamos un nuevo modelo basado en en las variables que superan el umbral propuesto, siendo el número de variables de 18.
+
+
+```{r}
+
+model_AIC <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
+                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                  + Clusters_4+ Clusters_6  + Clusters_8 
+                  + Clusters_9 + Clusters_11 + Clusters_13
+                  + sale_quarter_Q3 +sale_quarter_Q4+ sqft_lot_log +  sqft_above_log + sqft_living_log + Dist_from_seattle_log, data = train_v2)
+
+model_AIC <- lm(log(price_m2) ~ bathrooms + condition
+                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
+                  + Clusters_4+ Clusters_6  + bathrooms
+                  + Clusters_9 + Clusters_11 
+                  + sqft_lot_log +  sqft_above_log + sqft_living_log + Dist_from_seattle_log, data = train_v2)
+summary(model_AIC)
+
+summary(model_AIC)
+new_summary(summary(model_AIC)$coefficients, 5)
+
+plot(model_AIC, which=1, col=c("blue"))
+plot(model_AIC, 2)
+
+
+```
+
+A la vista de los resultados, podemos observar que el R2 se situa en 70.23%, ligeramente inferior a los dos modelos anteriores, si bien el modelo se ha estimado con 7 variables menos, lo que nos permite concluir que estas 7 variable no aportan una gran capacidad explicativa al modelo.
+
+
+```{r}
+
+require(nortest)  # Se debe haber instalado nortest
+lillie.test(model_AIC$residuals)
+
+
+```
+
+
+
+## Conclusion
+
