@@ -27,8 +27,9 @@ library(pracma)
 library(geosphere)
 library(readxl)
 library(glmnet)
-
-
+library(mice)
+library(missForest)
+library(VIM)
 library(readr)
 library(naniar)
 library(gridExtra)
@@ -55,6 +56,9 @@ Para la realización del procto se emplean las siguientes librerías.
 * geosphere
 * readxl
 * glmnet
+* mice
+* missForest
+* VIM
 * readr
 * naniar
 * gridExtra
@@ -422,26 +426,51 @@ Se realiza un análisis de la existencia de datos faltantes.
 
 ### Datos faltantes
 
-Datos faltantes, __NA__
 
+Se genera un 5% de datos faltantes en las variables __"grade", "sqft_living15" y "sqft_basement"__.
 ```{r}
-colSums(is.na(train))
+miss <- c("grade", "sqft_living15","sqft_basement")
+train_na <- train %>% select(miss)
+train_miss <- prodNA(train_na, 0.05)
+
+var <- c("lat", "long", "id", "date", "price","bedrooms","bathrooms","sqft_living","sqft_lot", "floors","view","waterfront", "condition","sqft_above","sqft_lot15","yr_built","yr_renovated","zipcode","sale_date","sale_year","sale_month","sale_quarter","sale_tenure","yr_since_last_renovated","price_m2","Dist_from_seattle")
+
+train_new <- train %>% select(var)
+
+train_miss_new <- cbind(train_miss,train_new)
+colSums(is.na(train_miss_new))
 ```
 
-Datos con valor __0__
 
+
+Datos de las variables con valor = __0__
 ```{r}
 colSums(train==0)
 ```
 
+Análisis del patron de datos faltantes.
+```{r}
+mice_plot <- aggr(train_miss_new, col=c('navyblue','yellow'),
+                    numbers=TRUE, sortVars=TRUE,
+                    labels=names(train_miss_new), cex.axis=.7,
+                    gap=1, ylab=c("Missing data","Pattern"))
+```
 ### Imputación de datos faltantes
 
-Se estudian los NA de sqft_above que se igualaran al valor del sqft_living puesto que en más de la mitad de los datos coinciden
-
-Nº total filas
 ```{r}
-nrow(train)
+imputed <- train_miss_new %>% select(grade, bathrooms, bedrooms,price) %>% VIM::kNN(variable='grade')
+imputed <- train_miss_new %>% select(sqft_basement, sqft_living, sqft_above,bedrooms, bathrooms,price) %>% VIM::kNN(variable='sqft_basement')
+imputed <- train_miss_new %>% select(sqft_living15, sqft_living, sqft_above, bathrooms, bedrooms, price) %>% VIM::kNN(variable='sqft_living15')
+
+
+train_miss_new$grade <- imputed$grade
+train_miss_new$sqft_basement <- imputed$sqft_basement
+train_miss_new$sqft_living15 <- imputed$sqft_living15
+train_miss_new
 ```
+
+
+
 Nº filas coinciden sqft_living y sqft_above
 ```{r}
 sqft_compare <- train[, c("sqft_living", "sqft_above")]
