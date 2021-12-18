@@ -33,16 +33,22 @@ library(fastDummies)
 library(glmnet)
 library(emmeans)
 library(stargazer)
+library(regclass)
+library(car)
+library(lsr)
 
 
-train <- as.data.frame(read.csv(file = 'C:/Users/n0375471/OneDrive - Liberty Mutual/Documentos/house_king_county/house_king_county-Moncef/train.csv'))
+train <- as.data.frame(read.csv(file = 'C:/Users/n0375471/OneDrive - Liberty Mutual/Documentos/house_king_county/house_king_county-Moncef/train_final.csv'))
+
+test_final <- as.data.frame(read.csv(file = 'C:/Users/n0375471/OneDrive - Liberty Mutual/Documentos/house_king_county/house_king_county-Moncef/test_final.csv'))
+
+
+#train = train  %>% filter(price_m2_log < quantile(price_m2_log,0.95))
 
 ```
 
 
 En este apartado, hemos estimado varios modelos a partir de distintas metodologías para poder comparar cual de ellos nos arroja mejores resultados, esto es, menor error cuadratico medio. Para ello, se han estimado los siguientes modelos:
-
-- Modelo inicial con la variable respuesta "price": se trata del modelo con la variable original "price" y sin las variables "Cluster" y "Dist_from_Seattle". Es un modelo inicial de partida para ver como mejora o empeora el R2 al añadir nuevas variables o una transformación de la variable respuesta.
 
 - Modelo con la variables respuesta "log_price_m2" : en este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", variable con mucha dispersión.
 
@@ -56,18 +62,6 @@ Para los dos modelos iniciales, la metodología de selección de variables ha si
 
 
 ```{r, include=FALSE}
-
-#Convertimos las variables ctageoricas en dummies para su uso en el modelo.
-
-train_v1<- dummy_cols(train, select_columns = c('waterfront','view','Clusters','sale_quarter'),remove_most_frequent_dummy = TRUE,
-                   remove_selected_columns = TRUE)
-
-train_v1$sqft_lot_log = log(train_v1$sqft_lot)
-train_v1$sqft_above_log = log(train_v1$sqft_above)
-train_v1$sqft_living_log = log(train_v1$sqft_living)
-train_v1$Dist_from_seattle_log = log(train_v1$Dist_from_seattle)
-#train_v1$yr_renovated_log = log(train_v1$yr_renovated)
-#train_v1$sale_tenure_log = log(train_v1$sale_tenure)
 
 #specify_decimal
 specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
@@ -86,70 +80,22 @@ new_summary  <- function(lmcoef, digits) {
 
 
 
-#Modelo inicial con la variable respuesta "price".
-
-
-Estimamos el modelo con la variable original "price" y sin las variables "Cluster" y "Dist_from_Seattle". Es un modelo inicial de partida para ver como mejora o empeora el R2 al añadir nuevas variables o una transformación de la variable respuesta:
-
-```{r}
-
-#Incluimos en c() las variables que NO queremos usar en la regresiÃ³n.
-train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,
-                                     yr_renovated,sqft_living,Dist_from_seattle,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
-                                     sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15,price_m2,Dist_from_seattle_log, 
-                                     Clusters_1,      
-Clusters_3, 
-Clusters_4,      
-Clusters_5,   
-Clusters_6,      
-Clusters_7,   
-Clusters_8,      
-Clusters_9,   
-Clusters_10,      
-Clusters_11,   
-Clusters_12,      
-Clusters_13,      
-Clusters_8))
-
-model_inicial <- lm(price ~ ., data = train_v2)
-summary(model)
-new_summary(summary(model_inicial )$coefficients, 5)
-
-
-plot(model_inicial , which=1, col=c("blue"))
-plot(model_inicial , 2)
-
-
-```
-
-
-```{r}
-
-#Test bondad del auste para los residuos
-
-require(nortest)  # Se debe haber instalado nortest
-(lillie.test(model_inicial $residuals))
-
-
-```
-
-En este primer modelo, podemos ver que el R2 ajustado es del 57%. Por otra parte, el grafico de los residuos muestra cierta tendencía, lo que nos puede indicar que hay algún tipo de relación no lineal entre los regresores y la variable independiente. Por último, tanto  Q-Q plot como el test de bondad de ajuste realizado sobre los residuos nos hacen rechazar la hipótesis nula de normalidad de los residuos. 
-
-
-
-
 #Modelo con la variables respuesta "log_price_m2"
 
 En este apartado estimamos un modelo con la variables respuesta "log_price_m2". Para este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", la cual presenta una gran dispersión.
 
+
+
 ```{r}
 
+train_v1 <- na.omit(train)
+train_v1$sqft_basement_log = log(train_v1$sqft_basement)
+
 #Incluimos en c() las variables que NO queremos usar en la regresiÃ³n.
-train_v2 = dplyr::select(train_v1,-c(id,sale_tenure,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,
-                              sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
+train_v2 = dplyr::select(train,-c(sale_quarter_Q1,sale_quarter_Q4,floors, sale_quarter_Q3,price_m2,id,sale_tenure_log,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,sqft_above_log,sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
 
 
-model <- lm(log(price_m2) ~ ., data = train_v2)
+model <- lm(price_m2_log ~ . +grade:condition , data = train_v2)
 summary(model)
 new_summary(summary(model)$coefficients, 5)
 
@@ -160,8 +106,11 @@ require(nortest)  # Se debe haber instalado nortest
 lillie.test(model$residuals)
 
 
+gvlma(model)
+car::vif(model)
 
 ```
+
 
 ```{r}
 
@@ -178,6 +127,32 @@ En este segundo modelo, podemos ver que el R2 ajustado es del 71%, 14% puntos ma
 No obstante, tanto el Q-Q plot como el test de bondad de ajuste realizado sobre los residuos nos hacen rechazar la hipótesis nula de normalidad de los residuos. 
 
 
+```{r}
+
+test_final <- as.data.frame(read.csv(file = 'C:/Users/n0375471/OneDrive - Liberty Mutual/Documentos/house_king_county/house_king_county-Moncef/test_final.csv'))
+test_pred_model <- predict(model,newdata=test_final)
+
+test_y   <- test_final$price_m2_log
+
+SS.total      <- sum((test_y - mean(test_y))^2)
+SS.residual   <- sum((test_y - test_pred_model)^2)
+SS.regression <- sum((test_pred_model- mean(test_y))^2)
+SS.total - (SS.regression+SS.residual)
+# [1] 8958890
+
+# NOT the fraction of variability explained by the model
+test.rsq <- SS.residual/SS.total  
+test.rsq
+# [1] 0.0924713
+
+# fraction of variability explained by the model
+(r2 = SS.regression/SS.total) 
+# [1] 0.08956405
+
+```
+
+Este modelo arroja un R2 del 70% en la base de datos "test".
+
 #Modelo con la variables respuesta sugeridas por la regresión LASSO
 
 Para este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
@@ -191,7 +166,7 @@ x <- model.matrix(log(train_v2_nona$price_m2)~., train_v2_nona )[,-1]
 y <- log(train_v2_nona$price_m2)
 
 
-lambdas <- model.matrix(log(price_m2) ~., data = train_v2_nona)
+lambdas <- model.matrix(price_m2_log ~., data = train_v2_nona)
 
 
 ```
@@ -209,7 +184,6 @@ out_eleven <- glmnet(lambdas,y,alpha=1,lambda = cv_lasso$lambda.1se)
 out_eleven
 coef(out_eleven )
 cv_lasso
-
 
 ```
 
@@ -232,6 +206,8 @@ sprintf("R2 = %f", rsq_lasso)
 
 Nuevamente rechzamos la hipótesis de normalidad de los residuos. Por otra parte el R2 de este modelo ha bajado en 1% respecto al modelo anterior, situandose en el 70.6%
 
+Este modelo arroja un R2 del 66% en la base de datos "test".
+
 
 #Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC
 
@@ -246,22 +222,19 @@ step_model <- stepAIC(model, trace = TRUE, direction= "both")
 
 ```
 
-Observamos que a partir de la variable "bathrooms", el aporte del resto de variables a la redución del AIC es mínimo. Estableciendo el humbral de forma arbitraria en 5.5, estimamos un nuevo modelo basado en en las variables que superan el umbral propuesto, siendo el número de variables de 18.
+Observamos que a partir de la variable "bedrooms", el aporte del resto de variables a la redución del AIC es mínimo. Estableciendo el humbral de forma arbitraria en 5.5, estimamos un nuevo modelo basado en en las variables que superan el umbral propuesto, siendo el número de variables de 18.
 
 
 ```{r}
 
-model_AIC <- lm(log(price_m2) ~ bedrooms + bathrooms + floors + condition
-                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
-                  + Clusters_4+ Clusters_6  + Clusters_8 
-                  + Clusters_9 + Clusters_11 + Clusters_13
-                  + sale_quarter_Q3 +sale_quarter_Q4+ sqft_lot_log +  sqft_above_log + sqft_living_log + Dist_from_seattle_log, data = train_v2)
+train_v2 = dplyr::select(train,-c(price_m2,id,sale_tenure_log,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,sqft_above_log,sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
 
-model_AIC <- lm(log(price_m2) ~ bathrooms + condition
-                  + grade + waterfront_1 + view_1 + view_2 + view_3 + view_4 + Clusters_1 + Clusters_3 
-                  + Clusters_4+ Clusters_6  + bathrooms
-                  + Clusters_9 + Clusters_11 
-                  + sqft_lot_log +  sqft_above_log + sqft_living_log + Dist_from_seattle_log, data = train_v2)
+
+model_AIC <- lm(price_m2_log ~ +sqft_living_log + grade + Clusters_1 + Clusters_4 + Clusters_5 + Dist_from_seattle_log + Clusters_11 
+                + Clusters_8 + view + condition + waterfront_1 + Clusters_10 + Clusters_6 + floors + sale_quarter_Q3 + sale_quarter_Q4  
+                  +bedrooms, data = train_v2)
+
+
 summary(model_AIC)
 
 summary(model_AIC)
@@ -269,6 +242,9 @@ new_summary(summary(model_AIC)$coefficients, 5)
 
 plot(model_AIC, which=1, col=c("blue"))
 plot(model_AIC, 2)
+car::vif(model_AIC)
+gvlma(model_AIC)
+
 
 
 ```
@@ -284,7 +260,43 @@ lillie.test(model_AIC$residuals)
 
 ```
 
+```{r, include= False}
+
+test_pred_model_AIC <- predict(model_AIC,newdata=test_final)
+
+test_y   <- test_final$price_m2_log
+
+SS.total      <- sum((test_y- mean(test.y))^2)
+SS.residual   <- sum((test_y - test_pred_model_AIC)^2)
+SS.regression <- sum((test_pred_model_AIC- mean(test_y))^2)
+SS.total - (SS.regression+SS.residual)
+# [1] 8958890
+
+# NOT the fraction of variability explained by the model
+test.rsq <- SS.residual/SS.total  
+test.rsq
+# [1] 0.0924713
+
+# fraction of variability explained by the model
+(r2 = SS.regression/SS.total) 
+# [1] 0.08956405
+
+```
+
+Este modelo arroja un R2 del 68.6% en la base de datos "test".
 
 
 ## Conclusion
+
+Las principales conclusiones han sido las siguientes:
+
+* En análisis inicial no ha permitido conocer los datos y sus principales medidas. Asímismo, hemos podido crear nuevas variables que no han sido de gran utilidad a la hora de estimar algunos modelos.
+
+*  Mediante el análisis multivariantes, donde hemos podido analizar tanto las variables entre si como las variables frente a la variable respuesta, se ha podido detrminar que variables nos ayudan a explicar mejor la variable respuesta, asi como aquellas vatriables a excluir para no incurrir en multicolinealidad. Por otra parte, algunas variables que mantenian una relación no lineal con las variable respuesta han sido transformadas para forzar una relación lineal. 
+
+* En cuanto a los modelos, ninguno de ellos logra que los residuos sean ruido blanco, asi como evitar la heterocedasticidad. No obstante, el R2 observado para todos los modelos en la base de datos "test" es bueno, lo que indica que los modelos son estables a pesar de no cumplir las principales hipótesis de la regresión lineal.
+
+
+
+
 
