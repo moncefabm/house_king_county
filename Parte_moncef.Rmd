@@ -80,7 +80,7 @@ new_summary  <- function(lmcoef, digits) {
 
 
 
-#Modelo con la variables respuesta "log_price_m2"
+# Modelo con la variables respuesta "log_price_m2"
 
 En este apartado estimamos un modelo con la variables respuesta "log_price_m2". Para este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", la cual presenta una gran dispersión.
 
@@ -95,7 +95,7 @@ train_v1$sqft_basement_log = log(train_v1$sqft_basement)
 train_v2 = dplyr::select(train,-c(sale_quarter_Q1,sale_quarter_Q4,floors, sale_quarter_Q3,price_m2,id,sale_tenure_log,yr_renovated,sqft_above,sqft_lot,sale_tenure,yr_renovated,sqft_living,Dist_from_seattle,price,date,zipcode,sqft_basement,lat,sqft_lot15,long,date,sale_date,sqft_above_log,sale_year,yr_built,sale_month,yr_since_last_renovated,sqft_living15))
 
 
-model <- lm(price_m2_log ~ . +grade:condition , data = train_v2)
+model <- lm(price_m2_log ~ . , data = train_v2)
 summary(model)
 new_summary(summary(model)$coefficients, 5)
 
@@ -153,7 +153,7 @@ test.rsq
 
 Este modelo arroja un R2 del 70% en la base de datos "test".
 
-#Modelo con la variables respuesta sugeridas por la regresión LASSO
+# Modelo con la variables respuesta sugeridas por la regresión LASSO
 
 Para este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
 
@@ -209,7 +209,7 @@ Nuevamente rechzamos la hipótesis de normalidad de los residuos. Por otra parte
 Este modelo arroja un R2 del 66% en la base de datos "test".
 
 
-#Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC
+# Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC
 
 En este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas que mayor aportación tienen en términos de reducción del AIC.
 
@@ -286,7 +286,7 @@ test.rsq
 Este modelo arroja un R2 del 68.6% en la base de datos "test".
 
 
-## Conclusion
+## Conclusiones
 
 Las principales conclusiones han sido las siguientes:
 
