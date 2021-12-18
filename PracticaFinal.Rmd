@@ -99,9 +99,33 @@ Lectura de datos, separación TRAIN vs TEST
 ```{r}
 #Cargamos los datos y definimos una muestra train y otra test
 
-train <- as.data.frame(read.csv(file = 'C:/Users/Juanjo/Desktop/MasterDataScience/Practica/PullBueno/otra/train.csv'))
+train <- as.data.frame(read.csv(file = '/home/jl/Escritorio/Master DS/Proyecto_King_County/ss/train.csv'))
 
 ```
+
+Descripción de variables
+
+* id: valor único
+* date: fecha de venta de la vivienda
+* price: precio de venta
+* bedrooms: número de habitaciones por vivienda
+* bathrooms: número de baños por vivienda
+* sqft_living: superficie de la vivienda en pies cuadrados
+* sqft_lot: superficie de la parcela de la vivienda en pies cuadrados
+* floors: número de plantas por vivienda.
+* waterfront: si la vivienda tiene vistas al mar
+* view: numero visita a la vivienda
+* condition: el estado de la vivienda establecido mediante una variable numérica del
+* grade: nota general de la vivienda propuesta por el sistema de puntuación de la zona
+* sqft_above: superficie de la huella perimetral de la vivienda sobre rasante en pies cuadrados.
+* sqft_basement: superficie de la vivienda bajo rasante en piés cuadrados
+* yr_built: año de construcción de la vivienda
+* yr_renovated: año de la renovación de la vivienda
+* zipcode: codigo postal de la vivienda
+* lat: latitud de la coordenada de la vivienda medida en pies
+* long: longitud de la coordenada de la vivienda medida en pies
+* sqft_living15: superficie de la vivienda en el año 2015 
+* sqft_lot15: superficie de la parcela en el año 2015 
 
 ## ANÁLISIS EDA
 
@@ -151,7 +175,7 @@ summary(train$sqft_living15)
 
 Se estudia la variable __sqft_lot__
 ```{r}
-p7 <- ggplot(train, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p7 <- ggplot(train, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) 
 p8 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot), colour = "navy", fill = "steelblue")
 grid.arrange(p7, p8, nrow=1)
 summary(train$sqft_lot)
@@ -159,7 +183,7 @@ summary(train$sqft_lot)
 
 Se estudia la variable __sqft_lot15__
 ```{r}
-p9 <- ggplot(train, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p9 <- ggplot(train, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
 p10 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot15), colour = "navy", fill = "steelblue")
 grid.arrange(p9, p10, nrow=1)
 summary(train$sqft_lot15)
@@ -177,7 +201,7 @@ summary(train$sqft_above)
 
 Se estudia la variable __sqft_basement__
 ```{r}
-p13 <- ggplot(train, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p13 <- ggplot(train, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
 p14 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_basement), colour = "navy", fill = "steelblue")
 grid.arrange(p13, p14, nrow=1)
 summary(train$sqft_basement)
@@ -186,7 +210,7 @@ summary(train$sqft_basement)
 
 Se estudia la variable __yr_built__
 ```{r}
-p15 <- ggplot(train, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p15 <- ggplot(train, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
 p16 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_built), colour = "navy", fill = "steelblue")
 grid.arrange(p15, p16, nrow=1)
 summary(train$yr_built)
@@ -194,7 +218,7 @@ summary(train$yr_built)
 
 Se estudia la variable __yr_renovated__
 ```{r}
-p17 <- ggplot(train, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p17 <- ggplot(train, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
 p18 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
 grid.arrange(p17, p18, nrow=1)
 summary(train$yr_renovated)
@@ -235,6 +259,9 @@ p2 <- ggplot(train, aes(x=bathrooms)) + geom_bar(colour = "navy", fill = "steelb
 p3 <- ggplot(train, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue")
 
 grid.arrange(p1, p2, p3, nrow=1)
+summary(train$bedrooms)
+summary(train$bathrooms)
+summary(train$floors)
 ```
 
 Se estudian las variable __waterfront, view__
@@ -243,6 +270,8 @@ p1 <- ggplot(train, aes(x=waterfront)) + geom_bar(colour = "navy", fill = "steel
 p2 <- ggplot(train, aes(x=view)) + geom_bar(colour = "navy", fill = "steelblue")
 
 grid.arrange(p1, p2, nrow=1)
+summary(train$waterfront)
+summary(train$view)
 ```
 
 Se estudian las variable __condition, grade__
@@ -251,12 +280,14 @@ p1 <- ggplot(train, aes(x=condition)) + geom_bar(colour = "navy", fill = "steelb
 p2 <- ggplot(train, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue")
 
 grid.arrange(p1, p2, nrow=1)
+summary(train$condition)
+summary(train$grade)
 ```
 
 Se estudia la variable __zipcode__
 ```{r}
 ggplot(train, aes(x=zipcode)) + geom_bar(colour = "navy", fill = "steelblue")
-
+summary(train$zipcode)
 ```
 
 
@@ -287,6 +318,9 @@ p2 <- ggplot(train, aes(x=sale_month)) + geom_bar(colour = "navy", fill = "steel
 p3 <- ggplot(train, aes(x=sale_quarter)) + geom_bar(colour = "navy", fill = "steelblue")
 
 grid.arrange(p1, p2, p3, nrow=1)
+summary(train$sale_year)
+summary(train$sale_month)
+summary(train$sale_quarter)
 ```
 
 Se estudian las variable __sale_tenure, yr_since_last_renovated2__
@@ -294,6 +328,8 @@ Se estudian las variable __sale_tenure, yr_since_last_renovated2__
 p1 <- ggplot(train, aes(x=sale_tenure)) + geom_bar(colour = "navy", fill = "steelblue")
 p2 <- ggplot(train, aes(x=yr_since_last_renovated)) + geom_bar(colour = "navy", fill = "steelblue")
 grid.arrange(p1, p2, nrow=1)
+summary(train$sale_tenure)
+summary(train$yr_since_last_renovated)
 ```
 
 Se estudian las variable __price_m2__
@@ -303,6 +339,7 @@ p3 <- ggplot(train, aes(x=price_m2)) + geom_histogram(aes(y=..density..), colour
 p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price_m2), colour = "navy", fill = "steelblue")
 
 grid.arrange(p3, p4, nrow=1)
+summary(train$price_m2)
 ```
 
 
@@ -526,8 +563,14 @@ Transformacion de __bedrooms__ a __dummie__, factor, y quitamos el 33
 trans_var$bedrooms= as.factor(trans_var$bedrooms)
 df_bedrooms <- trans_var[, c("price", "bedrooms")]
 df_bedrooms <- subset(df_bedrooms, bedrooms != 33)
-ggplot(df_bedrooms, aes(x=price, color=bedrooms, fill=bedrooms)) + geom_density(alpha=.2)
-ggplot(df_bedrooms, aes(x=bedrooms, y=price, fill=bedrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_bedrooms, aes(x=price, color=bedrooms, fill=bedrooms)) + geom_density(alpha=.2)
+ggplot(df_bedrooms, aes(x=bedrooms, y=price, fill=bedrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
+
+trans_var$bedrooms= as.numeric(trans_var$bedrooms)
+trans_var$bedrooms <- cut(trans_var$bedrooms, breaks = c(0, 4, 7, Inf), labels = c("0-3", "4-6", "+7"), right = FALSE)
+df_bedrooms <- trans_var[, c("price", "bedrooms")]
+ggplot(df_bedrooms, aes(x=bedrooms, y=price, fill=bedrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
+
 
 ```
 
@@ -540,8 +583,13 @@ df_bathrooms <- trans_var[, c("price", "bathrooms")]
 df_bathrooms$bathrooms <- ceiling(df_bathrooms$bathrooms)
 trans_var$bathrooms= as.factor(df_bathrooms$bathrooms)
 df_bathrooms$bathrooms= as.factor(df_bathrooms$bathrooms)
-ggplot(df_bathrooms, aes(x=price, color=bathrooms, fill=bathrooms)) + geom_density(alpha=.2)
+#ggplot(df_bathrooms, aes(x=price, color=bathrooms, fill=bathrooms)) + geom_density(alpha=.2) + xlim(0,1000000)
 ggplot(df_bathrooms, aes(x=bathrooms, y=price, fill=bathrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+
+trans_var$bathrooms= as.numeric(trans_var$bathrooms)
+trans_var$bathrooms <- cut(trans_var$bathrooms, breaks = c(0, 3, 5, Inf), labels = c("0-2", "3-4", "+5"), right = FALSE)
+df_bathrooms <- trans_var[, c("price", "bathrooms")]
+ggplot(df_bathrooms, aes(x=bathrooms, y=price, fill=bathrooms)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,2000000)
 
 ```
 
@@ -572,8 +620,8 @@ Transformacion de __sqft_lot__ con __log10__
 sqft_lot_trans <- log10(trans_var$sqft_lot)
 trans_var <- mutate(train, sqft_lot_trans)
 
-p1 <- ggplot(trans_var, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
-p2 <- ggplot(trans_var, aes(x=sqft_lot_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p1 <- ggplot(trans_var, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
+p2 <- ggplot(trans_var, aes(x=sqft_lot_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
 grid.arrange(p1, p2, nrow=1)
 
 qqnorm(trans_var$sqft_lot)
@@ -592,8 +640,13 @@ df_floors <- trans_var[, c("price", "floors")]
 df_floors$floors <- ceiling(df_floors$floors)
 trans_var$floors= as.factor(df_floors$floors)
 df_floors$floors= as.factor(df_floors$floors)
-ggplot(df_floors, aes(x=price, color=floors, fill=floors)) + geom_density(alpha=.2)
-ggplot(df_floors, aes(x=floors, y=price, fill=floors)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_floors, aes(x=price, color=floors, fill=floors)) + geom_density(alpha=.2)
+ggplot(df_floors, aes(x=floors, y=price, fill=floors)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
+
+trans_var$floors= as.numeric(trans_var$floors)
+trans_var$floors <- cut(trans_var$floors, breaks = c(0, 3, Inf), labels = c("1-2", "+3"), right = FALSE)
+df_floors <- trans_var[, c("price", "floors")]
+ggplot(df_floors, aes(x=floors, y=price, fill=floors)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
 
 ```
 
@@ -616,8 +669,8 @@ Transformacion de __view__ a __dummie__ factor
 
 trans_var$view= as.factor(trans_var$view)
 df_view <- trans_var[, c("price", "view")]
-ggplot(df_view, aes(x=price, color=view, fill=view)) + geom_density(alpha=.2)
-ggplot(df_view, aes(x=view, y=price, fill=view)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+ggplot(df_view, aes(x=price, color=view, fill=view)) + geom_density(alpha=.2) + xlim(0,3000000)
+ggplot(df_view, aes(x=view, y=price, fill=view)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,2000000)
 
 ```
 
@@ -628,8 +681,13 @@ Transformacion de __condition__ a __dummie__ factor
 
 trans_var$condition= as.factor(trans_var$condition)
 df_condition <- trans_var[, c("price", "condition")]
-ggplot(df_condition, aes(x=price, color=condition, fill=condition)) + geom_density(alpha=.2)
-ggplot(df_condition, aes(x=condition, y=price, fill=condition)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_condition, aes(x=price, color=condition, fill=condition)) + geom_density(alpha=.2)
+ggplot(df_condition, aes(x=condition, y=price, fill=condition)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
+
+trans_var$condition= as.numeric(trans_var$condition)
+trans_var$condition <- cut(trans_var$condition, breaks = c(0, 3, 5, Inf), labels = c("1-2", "3-4", "+5"), right = FALSE)
+df_condition <- trans_var[, c("price", "condition")]
+ggplot(df_condition, aes(x=condition, y=price, fill=condition)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
 
 ```
 
@@ -640,8 +698,13 @@ Transformacion de __grade__ a __dummie__ factor
 
 trans_var$grade= as.factor(trans_var$grade)
 df_grade <- trans_var[, c("price", "grade")]
-ggplot(df_grade, aes(x=price, color=grade, fill=grade)) + geom_density(alpha=.2)
-ggplot(df_grade, aes(x=grade, y=price, fill=grade)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_grade, aes(x=price, color=grade, fill=grade)) + geom_density(alpha=.2)
+ggplot(df_grade, aes(x=grade, y=price, fill=grade)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")+ ylim(0,1000000)
+
+trans_var$grade= as.numeric(trans_var$grade)
+trans_var$grade <- cut(trans_var$grade, breaks = c(0, 4, 5, 6, 7, 8, 9, 10, Inf), labels = c("1-3", "4", "5","6","7","8","9","+10"), right = FALSE)
+df_grade <- trans_var[, c("price", "grade")]
+ggplot(df_grade, aes(x=grade, y=price, fill=grade)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") + ylim(0,1000000)
 
 ```
 
@@ -675,8 +738,8 @@ trans_var$sqft_basement_trans= as.integer(trans_var$sqft_basement_trans)
 trans_var$sqft_basement_trans= as.integer(trans_var$sqft_basement_trans-1)
 trans_var$sqft_basement_trans= as.logical(trans_var$sqft_basement_trans)
 df_sqft_basement_trans <- trans_var[, c("price", "sqft_basement_trans")]
-ggplot(df_sqft_basement_trans, aes(x=price, color=sqft_basement_trans, fill=sqft_basement_trans)) + geom_density(alpha=.2)
-ggplot(df_sqft_basement_trans, aes(x=sqft_basement_trans, y=price, fill=sqft_basement_trans)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_sqft_basement_trans, aes(x=price, color=sqft_basement_trans, fill=sqft_basement_trans)) + geom_density(alpha=.2)
+ggplot(df_sqft_basement_trans, aes(x=sqft_basement_trans, y=price, fill=sqft_basement_trans)) +  geom_boxplot(alpha=0.3) +  theme(legend.position="none") +ylim(0,1000000)
 
 ```
 
@@ -687,8 +750,8 @@ Transformacion de __zipcode__ a __dummie__ factor
 
 trans_var$zipcode= as.factor(trans_var$zipcode)
 df_zipcode <- trans_var[, c("price", "zipcode")]
-ggplot(df_zipcode, aes(x=price, color=zipcode, fill=zipcode)) + geom_density(alpha=.2)
-ggplot(df_zipcode, aes(x=zipcode, y=price, fill=zipcode)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_zipcode, aes(x=price, color=zipcode, fill=zipcode)) + geom_density(alpha=.2)
+ggplot(df_zipcode, aes(x=zipcode, y=price, fill=zipcode)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") +ylim(0,3000000)
 
 ```
 
@@ -699,8 +762,8 @@ Transformacion de __sale_quarter__ a __dummie__ factor
 
 trans_var$sale_quarter= as.factor(trans_var$sale_quarter)
 df_sale_quarter <- trans_var[, c("price", "sale_quarter")]
-ggplot(df_sale_quarter, aes(x=price, color=sale_quarter, fill=sale_quarter)) + geom_density(alpha=.2)
-ggplot(df_sale_quarter, aes(x=sale_quarter, y=price, fill=sale_quarter)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_sale_quarter, aes(x=price, color=sale_quarter, fill=sale_quarter)) + geom_density(alpha=.2)
+ggplot(df_sale_quarter, aes(x=sale_quarter, y=price, fill=sale_quarter)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") +ylim(0,1000000)
 
 ```
 
@@ -711,8 +774,8 @@ Transformacion de __Clusters__ a __dummie__ factor
 
 trans_var$Clusters= as.factor(trans_var$Clusters)
 df_Clusters <- trans_var[, c("price", "Clusters")]
-ggplot(df_Clusters, aes(x=price, color=Clusters, fill=Clusters)) + geom_density(alpha=.2)
-ggplot(df_Clusters, aes(x=Clusters, y=price, fill=Clusters)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none")
+#ggplot(df_Clusters, aes(x=price, color=Clusters, fill=Clusters)) + geom_density(alpha=.2)
+ggplot(df_Clusters, aes(x=Clusters, y=price, fill=Clusters)) +  geom_boxplot(alpha=0.3) + theme(legend.position="none") +ylim(0,1000000)
 
 ```
 
@@ -725,7 +788,7 @@ sale_tenure_trans <- log10(trans_var$sale_tenure)
 trans_var <- mutate(train, sale_tenure_trans)
 
 p1 <- ggplot(trans_var, aes(x=sale_tenure)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
-p2 <- ggplot(trans_var, aes(x=sale_tenure_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(trans_var, aes(x=sale_tenure_trans)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)  +xlim(0.7,2.1)
 grid.arrange(p1, p2, nrow=1)
 
 ```
@@ -735,7 +798,7 @@ Transformacion de __Dist_from_seattle__ con __log10__
 
 #Transformacion Dist_from_seattle con log10
 
-Dist_from_seattle_trans <- log10(trans_var$Dist_from_seattle)
+Dist_from_seattle_trans <- log(trans_var$Dist_from_seattle)
 trans_var <- mutate(train, Dist_from_seattle_trans)
 
 p1 <- ggplot(trans_var, aes(x=Dist_from_seattle)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
