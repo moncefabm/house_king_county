@@ -1,0 +1,1173 @@
+---
+title: "Práctica Fundamentos"
+author: "Juan José, Moncef y Jose"
+date: "17/12/2021"
+output:
+  html_document:
+    code_folding: hide
+    theme: united
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+#Librerias
+
+library(MASS)
+library(emmeans)
+library(stargazer)
+library(regclass)
+library(car)
+library(lsr)
+library(gvlma)
+library(nortest)
+library(tidyr)
+library(date)
+library(zoo)
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+#library(caret)
+library(dplyr)
+library(olsrr)
+library(fastDummies)
+library(pracma)
+library(geosphere)
+library(readxl)
+library(glmnet)
+library(mice)
+library(missForest)
+library(VIM)
+library(readr)
+library(naniar)
+library(gridExtra)
+library(grid)
+library(lattice)
+library(GGally)
+library(hrbrthemes)
+```
+
+## INTRODUCCIÓN
+
+Para la realización de la práctica se ha selecionado un base de datos con los precios de viviendas del barrio King County del estado de Washington(EEUU). Base de datos descargada de: https://www.kaggle.com/swathiachath/kc-housesales-data.
+
+
+Para la realización del proyecto se emplean las siguientes librerías.
+
+* MASS
+* emmeans
+* stargazer
+* regclass
+* car
+* lsr
+* nortest
+* tydyr
+* date
+* zoo
+* tidyverse
+* ggplot2
+* corrplot
+* caret
+* dplyr
+* olsrr
+* fastDummies
+* pracma
+* geosphere
+* readxl
+* glmnet
+* mice
+* missForest
+* VIM
+* readr
+* naniar
+* gridExtra
+* grid
+* lattice
+* GGally
+
+## OBJETIVOS
+
+Los objetivos prinicpales de esta práctica son analizar, entender y transformar las variables del conjunto de datos seleccionado y por otra parte construir un modelo de regresión lineal múltiple para predecir la variable “price” (precio) de las casas que se han vendido en los periodos 2014 y 2015 en el área de King County, Seattle (EE.UU.).
+
+### Principales objetivos
+
+* Analizar las variables de la base de datos seleccionada para su comprensión y posterior estudio.
+
+* Aplicar el módelo de regresión lineal múltiple para inferir la variable "price", que corresponde al precio de la vivienda.
+<br/>
+
+
+### Objetivos específicos
+
+1.	División de la base de datos en 2 sub-conjuntso de datos, train (70% de los datos) y test (30% de los datos), con la finalidad de construir el modelo usando la base de datos train, y comprobando posteriormente que el modelo pronostique bien en los datos test, tratando de evitar el over-fitting.
+  
+2.	Análisis de las variables independientes según su tipología (continuas vs categóricas). Esto incluye la transformación de algunas variables continuas, la codificación en variables dummies para las variables categóricas y la correlación existente entre todas ellas con la finalidad de evitar la multicolinealidad.
+  
+3.	Por otra parte, si bien en la base de datos no existen variables con missing, hemos creado variables missing artificialmente para incluir la imputación de missings en nuestro análisis.
+
+4.	Por último, se ha estimado varios modelos de regresión lineal múltiple empleando diferentes metodologías de selección de variables.El objetivo de dichos modelos, a parte de ayudarnos a entender la relacion existente entre las diferentes variables, ha sido predecir el precio de venta de las viviendas.
+
+
+## CARGA DE DATOS
+
+
+La base de datos consta de 21 variables, tanto de tipo categorico como númerico. A continuación se exponen dichas variables, con su descripción:
+
+* id: valor único
+* date: fecha de venta de la vivienda
+* price: precio de venta
+* bedrooms: número de habitaciones por vivienda
+* bathrooms: número de baños por vivienda
+* sqft_living: superficie de la vivienda en pies cuadrados
+* sqft_lot: superficie de la parcela de la vivienda en pies cuadrados
+* floors: número de plantas por vivienda.
+* waterfront: si la vivienda tiene vistas al mar
+* view: numero visita a la vivienda
+* condition: el estado de la vivienda establecido mediante una variable numérica.
+* grade: nota general de la vivienda propuesta por el sistema de puntuación de la zona
+* sqft_above: superficie de la huella perimetral de la vivienda sobre rasante en pies cuadrados.
+* sqft_basement: superficie de la vivienda bajo rasante en piés cuadrados
+* yr_built: año de construcción de la vivienda
+* yr_renovated: año de la renovación de la vivienda
+* zipcode: codigo postal de la vivienda
+* lat: latitud de la coordenada de la vivienda medida en pies
+* long: longitud de la coordenada de la vivienda medida en pies
+* sqft_living15: superficie de la vivienda en el año 2015 
+* sqft_lot15: superficie de la parcela en el año 2015 
+
+
+A continuación realizamos la carga y lectura de datos, procediendo a crear dos bases de datos Test (70% de la muestra) y Test(30% de la muestra):
+
+```{r}
+#Cargamos los datos (ya hemos definido previamente las muestra TEST y TRAIN).
+data = as.data.frame(read_excel("C:/Users/Documentos/house_king_county/house_king_county-Moncef/kc_house_data_vfinal.xlsx"))
+
+data$waterfront = as.factor(data$waterfront)
+data$zipcode = as.factor(data$zipcode)
+
+dt = sort(sample(nrow(data), nrow(data)*.7))
+train<-data[dt,]
+test<-data[-dt,]
+str(train)
+
+```
+
+Una vez que cargamos los datos, verificamos que la carga se ha hecho correctamente y  que los valores tienen el formato esperado, acorde a su descripción. 
+<br/>
+
+## ANÁLISIS EDA
+
+En este apartado, procedemos a realizar un análisis exploratorio inicial para familiarizarnos con los datos. 
+
+
+### Análisis de variables cuantitativas
+
+A continuación procederemos a analizar las variables de tipo cuantitativo de las que disponemos en nuestra base de datos. El objetivo principal de ese apartado es familiarizarnos con las variables y a su vez analizar si deben ser transformadas.
+
+  + Se estudia la variable __price__
+```{r}
+p1 <- ggplot(train, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price), colour = "navy", fill = "steelblue")
+grid.arrange(p1, p2, nrow=1)
+summary(train$price)
+```
+
+La variable __price__ será nuestra variable respuesta. Podemos observar que se trata de una variable sesgada a la izquierda, donde la mediana es menor a la media. Presenta una gran dispersión, ya que hay viviendas desde 70.000$ hasta mas de 7 millones de dólares. Ese hecho dificultará que el modelo ajustado prediga correctamente en todos los tramos de la variable. Se puede observar que la variabl se ve influenciada a su vez por muchos valores extremos o atípicos. Visualmente observamos que la variable no presenta aparentemente una distribución normal. 
+
+
+
+  + Se estudia la variable __sqft_living__
+```{r}
+p3 <- ggplot(train, aes(x=sqft_living)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living), colour = "navy", fill = "steelblue")
+grid.arrange(p3, p4, nrow=1)
+summary(train$sqft_living)
+```
+
+Al igual que el grafico anterior, se trata de una variable ligeramente sesgada a la izquierda, con una media superior a la mediana, si bien esto es influenciado por valor atipicos, ya que hay casas con mucho metro cuadrados.
+
+
+
+  + Se estudia la variable __sqft_living15__
+```{r}
+p5 <- ggplot(train, aes(x=sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p6 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_living15), colour = "navy", fill = "steelblue")
+grid.arrange(p5, p6, nrow=1)
+summary(train$sqft_living15)
+```
+
+Se trata de una variable  muy similar a la anterior, ya que es la superficie de la vivienda medida en el año 2015. No obstante, podemos observar que en este caso la variable está mas concetrada y toma valores menores a la anterior, siendo la media 1978, frente a los 2000 de __Sqft_living__.  
+
+
+  + Se estudia la variable __sqft_lot__
+```{r}
+p7 <- ggplot(train, aes(x=sqft_lot)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) 
+p8 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot), colour = "navy", fill = "steelblue")
+grid.arrange(p7, p8, nrow=1)
+summary(train$sqft_lot)
+```
+
+La variable __sqft_lot__ mide la superficie de la parcela. Es lógico por tanto que tengamos mucha concentración de observaciones en el valor 0, que indica que la casa en concreto no cuenta con parcela. De nuevo, podemos ver que la variable está sesgada a la izquierda, y no visualmente no sigue una distirbución normal. 
+
+
+
+  + Se estudia la variable __sqft_lot15__
+```{r}
+p9 <- ggplot(train, aes(x=sqft_lot15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
+p10 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_lot15), colour = "navy", fill = "steelblue")
+grid.arrange(p9, p10, nrow=1)
+summary(train$sqft_lot15)
+```
+
+Se trata de la misma variable que la anterior, medida en el año 2015. Ligero cambio frente a la variable original, con una media ligeramente mas alta. En prinicpio, tratataremos de incluir esta variable en los modelos, ya que parece mas fiable una medición realizada en la actualidad.
+
+
+  + Se estudia la variable __sqft_above__
+```{r, warning=FALSE}
+p11 <- ggplot(train, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p12 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_above), colour = "navy", fill = "steelblue")
+grid.arrange(p11, p12, nrow=1)
+summary(train$sqft_above)
+```
+
+
+Esta variable representa la superficie de la huella perimetral de la vivienda sobre rasante en pies cuadrados. Podemos ver que se trata de una variable ligeramente sesgada hacía la izquierda.  
+
+
+  + Se estudia la variable __sqft_basement__
+```{r}
+p13 <- ggplot(train, aes(x=sqft_basement)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
+p14 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=sqft_basement), colour = "navy", fill = "steelblue")
+grid.arrange(p13, p14, nrow=1)
+summary(train$sqft_basement)
+```
+
+Para esta variable, superficie de la vivienda bajo rasante en piés cuadrados, podemos observar que existe una gran concentración en 0, ya que muchas de las viviendas no cuenta con una superificie bajo rasante. POr otra parte, existen viviendas con una superficie fuera de lo común, constituyendo valores atípicos. Un posible tratamiento para esta variable podría ser descritizala en dos grupos,con o sin superficie bajo rasante.
+
+
+
+  + Se estudia la variable __yr_built__
+```{r}
+p15 <- ggplot(train, aes(x=yr_built)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
+p16 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_built), colour = "navy", fill = "steelblue")
+grid.arrange(p15, p16, nrow=1)
+summary(train$yr_built)
+```
+
+En este caso la variable representa el año de construcción de la vivienda. Podemos ver que la variable se encuentra sesgada a la derecha, con una mediana superior a la media. No se observan valores atípicos. 
+
+
+  + Se estudia la variable __yr_renovated__
+```{r}
+p17 <- ggplot(train, aes(x=yr_renovated)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30)
+p18 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=yr_renovated), colour = "navy", fill = "steelblue")
+grid.arrange(p17, p18, nrow=1)
+summary(train$yr_renovated)
+```
+
+La variable __yr_renovated__ representa el año en que fue realizada la última reforma, siendo 0 un valor asignado a viviendas que no hayan sido reformadas. POdemos ver que la practica totalidad las viviendas no han sido reformadas. Un tratamiento posible para esta variable sería descritizarla en dos niveles, uno para viviendas reformadas y otra para viviendas sin reformar. 
+
+
+
+  + Se estudian las variable __bedrooms, bathrooms, floors__
+```{r}
+p1 <- ggplot(train, aes(x=bedrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=bathrooms)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=floors)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+summary(train$bedrooms)
+summary(train$bathrooms)
+summary(train$floors)
+```
+
+* Para la primera variable __bedrooms__ podemos observar que la mayoría de las viviendas cuentan con 3 o mas habitaciones. Se trata de una variable con observaciónes muy concentradas entorno a la media. Existe un valor atípico para una vivienda con 33 habitaciones, si bien a través de la latitud y longitud hemos podido localizar la casa en Google, y aparentemente podría ser una valor real. 
+  
+* Para la segunda variable, __bathrooms__, que representa el número de baños de la vivienda, podemos observar que la mayoría de las casas tienen dos o mas baños. Existen algunos valor atipicos, con casas que cuentan con 7 y 8 baños.
+  
+* La variable __floors__ representa el número de plantas de la vivienda. Existen plantas con intemedias que hacen que la variable no siempre tome valores enteros. Podemos observar que la mayoría de las viviendas no tienen mas que una planta, y que el siguiente grupo mas número es el de viviendas con dos plantas.
+
+
+  + Se estudian las variable __condition, grade__
+```{r}
+p1 <- ggplot(train, aes(x=condition)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=grade)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+summary(train$condition)
+summary(train$grade)
+```
+
+* La variable __condition__ respresenta la condición de la vivienda medida en una escala del 1 al 5. Podemos ver que la mayoría de las viviendas tienen un condición de 3. No existen atípicos para esta variable. 
+  
+* Por último, la variable __grade__ representa la nota general de la vivienda propuesta por el sistema de puntuación de la zona. Esta varible tiene una media de 7.6, ligeramente superior a la mediana, por lo que se encuentra ligeramente sesgada a la derecha. No encontramos valores atípicos para esta variable. 
+
+  
+
+### Análisis de variables cualitativas
+
+A continuación procedemos a la descripción de las variables clualitativas:
+
+  + Se estudia la variable __date__
+
+```{r}
+dtdate <- gsub("T000000","",as.character(train$date))
+dtdate <- as.data.frame(dtdate)
+dtdate <- as.Date(dtdate[, 'dtdate'],'%Y%m%d')
+str(dtdate)
+
+Month <- format(dtdate,"%m")
+Year <- format(dtdate,"%Y")
+df_dateMix <- data.frame(Month, Year)
+df_date2014 <- subset(df_dateMix, Year == 2014)
+df_date2015 <- subset(df_dateMix, Year == 2015)
+p1 <- ggplot(df_dateMix, aes(x=Year)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("Years")
+p2 <- ggplot(df_date2014, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2014 Months")
+p3 <- ggplot(df_date2015, aes(x=Month)) + geom_bar(colour = "navy", fill = "steelblue") + ggtitle("2015 Months")
+
+grid.arrange(p1, p2, p3, nrow=1)
+summary(dtdate)
+```
+
+Podemos observar que la mayoría de las viviendas fueron vendidas en el 2014, siendo junio y el julio los meses con mayor número de ventas. Al no tener datos de todos los meses del año 2014 y 2015 no podemos analizar si existen indicios de estacionalidad. 
+
+
+  + Se estudian las variable __waterfront__
+```{r}
+p1 <- ggplot(train, aes(x=waterfront)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=view)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, nrow=1)
+summary(train$waterfront)
+summary(train$view)
+```
+
+La variable __waterfront__ representa si la vivienda tiene vistas al mar. Podemos observar que la mayoría de las viviendas no tienen vistas al mar. Mas tarde analizaremos el impacto de tener vistas en el precio de la vivienda. Por otra parte, la variable __view__ representa el número de visitas que ha recibido la vivienda. Podemos observar que la mayoría de las viviendas se visitan sin hacer una visita a la misma. 
+
+
+  + Se estudia la variable __zipcode__
+```{r}
+ggplot(train, aes(x=zipcode)) + geom_bar(colour = "navy", fill = "steelblue")
+```
+
+La variable __zipcode__ hace referencia al código postal de la vivienda. Se trata de una variable con mucha granularidad que no puede ser empleada para la modleización.  
+
+
+### Creación de nuevas variables
+
+
+Una vez estudiadas las variables de las que disponemos en la BBDD, consideramos que puede ser muy interesante crear algunas variables a partir de los datos con los que ya contamos:
+
+* Inicialmente, hemos observado que la variable "__price__" presenta una alta dispersión, ya que tenemos casas cuyo precio va desde los 80.000$ hasta los 8 millones, creemos que creando una nueva variable, en este caso ponderada por los "__sqft_living__" o metros cuadrados de la vivienda, podría ayudarnos a tener una variable respuesta mas estable, con menor dispersión. Esta nueva variable será nombrada "__price_sqft__".
+ 
+* A partir de la variable "__date__" podemos crear las variables "__mes__" y "__trimestre__". Esto nos puede a ayudar en la detección de algún efecto estacional que pudiera afectar a nuestra variable objetivo. Por otro lado, restando la variable "__yr_built__" a la variable "__date__" podemos obtener la variables "__sale_tenure__" que nos indicaria la antiguedad de la vivienda. Creemos que usar esta variable puede aportar mas información al modelo, ya que la variable toma "normaliza" mientras que usando únicamente "__yr_built__" tendríamos una variable muy dispersa.
+
+* Por otra parte, con las variables "lat" y "long" (latitud y longitud respectivamente), podemos calcular la distancia de cada una de las casas vendidas con respecto al centro de la ciudad de Seattle. Esto informaición puede ser muy relavante, ya que se puede apriori pensar que a mayor distancia menor precio.
+
+* La última variable que vamos a crear será "Clusters", donde crearmos grupos de casas que esten cerca unas de otras (a un radio detrminado). Esto nos permitirá recoger información que cada grupo tenga en común (por ejemplo, poder adquisitivo de una determinada zona, tipo de casa, tipo de barrio..). Si bien es cierto que este cluster podrían construirse de una forma mucho mas compleja, se trata de una versión simple como prueba inicial.
+
+Creamos algunas variables a través 
+
+```{r}
+
+#Creamos las variables en el conjunto de entrenamiento Train:
+
+train$sale_date = substr(train$date, 1, 8)
+train = transform(train, sale_date = as.Date(as.character(sale_date), "%Y%m%d"))
+train$sale_year = as.numeric(format(train$sale_date, format="%Y"))
+train$sale_month = as.factor(format(train$sale_date, format="%m"))
+train$sale_quarter = as.yearqtr(train$sale_date)
+train$sale_quarter = str_sub(train$sale_quarter,-2,-1)
+train$sale_tenure =  (as.numeric(train$sale_year) - train$yr_built)
+train$price_sqft = train$price/train$sqft_living
+
+
+#Creamos una variable que mide la distnacia de cada casa a la venta con respecto al centro ecónomico de la ciudad: Dist_from Seattle
+seattle = c(-122.335167, 47.608013)
+train = mutate(train, Dist_from_seattle=distHaversine(cbind(long, lat),seattle))
+str(train)
+
+
+#Creamos las variables en el conjunto de entrenamiento TEST, ya que si alguna variable resulta ser significativa en el modelo propuesto con los datos Train, la necesitaremos para poder analizar el poder predictivo del modelo en TEST:
+test$sale_date = substr(test$date, 1, 8)
+test = transform(test, sale_date = as.Date(as.character(sale_date), "%Y%m%d"))
+test$sale_year = as.numeric(format(test$sale_date, format="%Y"))
+test$sale_month = as.factor(format(test$sale_date, format="%m"))
+test$sale_quarter = as.yearqtr(test$sale_date)
+test$sale_quarter = str_sub(test$sale_quarter,-2,-1)
+test$sale_tenure =  (as.numeric(test$sale_year) - test$yr_built)
+test$price_sqft = test$price/test$sqft_living
+
+
+
+#Creamos una variable que mide la distnacia de cada casa a la venta con respecto al centro ecónomico de la ciudad: Dist_from Seattle
+test = mutate(test, Dist_from_seattle=distHaversine(cbind(long, lat),seattle))
+str(test)
+
+
+#Por otro lado, se calcula la distancia de cada casa con respecto al resto, agrupando después casas cercanas en clústers.Esta parte se realizó al principio del este proyecto, ya que necesitamos todos los datos para crear los cluster, ya que los mismo se calcula en función de la distancia con respecto al resto de casas de la BBDD. Si no incluimos todos los datos, en cada conjunto de datos, TRAIN y TEST, tendremos clusters diferentes. Esta variable ha sido creada y añadida a la BBDD como una variable mas, ya que computacionalmente, calcular la distancia de cada casa con respecto al resto es costoso.
+
+#long= data$long
+#lat = data$lat
+#DataMat<-as.matrix(cbind(long, lat))
+#DataMat[is.na(DataMat)]<-0
+
+#my_data <- as_tibble(DataMat)
+#my_data=my_data %>% slice(1:100)
+#my_data = as.data.frame(my_data)
+
+#Dist_Mat<-distm(my_data,my_data,fun=distHaversine)/1000
+#hclustfunc <- function(x) hclust(x, method="complete")
+#distfunc <- function(x) as.dist((1-cor(t(x)))/2)
+#d <- distfunc(Dist_Mat)
+#fit <- hclustfunc(d)
+#my_data$Clusters<- cutree(fit, h=0.25)
+#data = merge(x = data, y = my_data, by = c("lat", "long") , all.x = TRUE)
+#data$Clusters = as.factor(data$Clusters)
+#bwplot(Clusters~price, data = data, horizontal= TRUE)
+
+
+dclusters = as.data.frame(read_xlsx("C:/Users/Downloads/columna_clusters.xlsx"))
+
+train = merge(x = train, y = dclusters, by = "id",  all.x = TRUE)
+test = merge(x = test, y = dclusters, by = "id",  all.x = TRUE)
+
+```
+
+
+* Una vez creadas dichas variables, observamos los graficos con la distribución de las siguientes variables:  __sale_year,sale_month  y  sale_quarter.__
+
+```{r}
+p1 <- ggplot(train, aes(x=sale_year)) + geom_bar(colour = "navy", fill = "steelblue")
+p2 <- ggplot(train, aes(x=sale_month)) + geom_bar(colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=sale_quarter)) + geom_bar(colour = "navy", fill = "steelblue")
+
+grid.arrange(p1, p2, p3, nrow=1)
+summary(train$sale_year)
+summary(train$sale_month)
+summary(train$sale_quarter)
+```
+
+Podemos observar que tenemos mas observaciones concentradas en algunos meses o trimestres, lo que puede sugerir que pueda exisistir algún tipo de estacionalidad. Esto se analizará en el apartado de modelización.
+
+
+
+* Exploramos por otra parte las variable __sale_tenure y  yr_since_last_renovated2__
+
+```{r}
+p0 = ggplot(train, aes(x=yr_built)) + geom_bar(colour = "navy", fill = "steelblue")
+p1 = ggplot(train, aes(x=sale_tenure)) + geom_bar(colour = "navy", fill = "steelblue")
+grid.arrange(p0, p1, nrow=1)
+summary(train$yr_built)
+summary(train$sale_tenure)
+```
+
+A la vista de los resultados, vemos que la nueva variables __sale_tenure__ se distrubye ligeramente de una manera mas concentrada que las la variable original __yr_built__. Por otro lado, la variable __renovated_ind__ es una variable que concentra la mayor parte de las observaciones en 0, con muy poca exposiición en el resto de niveles, lo que nos indica que la mayor parte de las casas no ha sido reformado. 
+
+* Graficamos la Variable __price__:
+```{r}
+p1 <- ggplot(train, aes(x=price)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price), colour = "navy", fill = "steelblue")
+p3 <- ggplot(train, aes(x=price_sqft)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p4 <- ggplot(train, aes(x=1)) + geom_boxplot(aes(y=price_sqft), colour = "navy", fill = "steelblue")
+
+grid.arrange(p1,p2, p3, p4, nrow=2)
+summary(train$price_sqft)
+```
+
+Podemos osbervar que la nueva variable presenta una distribución mas concentrada y con menos valores extremos. Esta nueva variable ponderada puede mas estable para su uso como variable respuesta. 
+
+### Analisis multivariante cuantitativo
+
+Se estudia la correlación entre las variables cuantitativos:
+
+```{r}
+am_cuant <- train %>% select("bedrooms", "price","grade", "Dist_from_seattle","price_sqft", "sqft_living","sqft_lot", "sqft_above", "sqft_basement", "yr_built", "yr_renovated", "sqft_living15", "sqft_lot15","sale_tenure","bathrooms","condition", "sale_tenure", "floors")
+
+amc1 <- c("sqft_living", "sqft_lot", "sqft_living15", "sqft_basement", "sqft_above","price","price_sqft","Dist_from_seattle","sale_tenure","yr_built")
+amc2 <- c("yr_built", "yr_renovated", "price")
+
+am_cuant1 <- am_cuant %>% na.omit() %>% ggcorr()
+grid.arrange(am_cuant1, nrow=1)
+
+```
+
+Se puede observar que las variables con mayor correlación son:
+
+* Las variables __sqft_above__ está altamente correlacionada con __sqft_living__, ya que a mayor superificie perimetral de la casa, mayor superificie de la casa.
+  
+* Las variables __sqft_living__ y __sqft_living15__ guardan una alta correlación como era de esperar, ya que miden lo mismo en diferentes momentos del tiempo. 
+  
+* La variable __price__ y __sqft_living__ mantienen una correlación lineal positiva como era de esperar. Se comparamos la variables __price_sqft__ con __sqft_living__ podemos ver que como estamos ponderando la variable por __sqft_living__, la relación se revierte, exitiendo una correlación lineal negativa entre ambas variables.
+  
+* Cabe resaltar también que la relación entre __price_sqft__ y __Dist_from_seattle__ mantienen una correlación lineal negativa, hecho que no sé da entre la variable __price__ y __Dist_from_seattle__. 
+  
+* Alguna variables, altamente correlacionadas, son combinaciones lineales o variables medidas en diferentes momentos. Para el modelo final, no usaremos ambas variables, sino que probaremos cual de las dos puede aportar una mayor capacidad para explicar la varianza de nuestro modelo.
+
+
+  + Relación entre la variable __"sqft_above" y "sqft_living"__.
+
+```{r, warning=FALSE}
+ggplot(train,aes(x=sqft_above,y=sqft_living))+geom_point(alpha=0.5)+geom_smooth()+scale_x_continuous(limits = c(0, 6500))
+
+```
+
+Como ya hemos analizado en el análisis de  correlaciones, existe una alta correlación entre la  variable __sqft_living__, superficie de la vivienda en pies cuadrados y la varibale __sqft_above__, superficie de la huella perimetral de la vivienda sobre rasante en pies cuadrados.
+
+En este caso, para evitar un efecto de multicolinealidad, debemos testar cual de las dos variables ayuda a explicar mejor la variablidad de nuestros datos en el modelo.
+
+  + Relación entre  __"sqft_living"__ y __"sqft_living15"__.
+```{r,warning=FALSE}
+ggplot(train,aes(x=sqft_living,y=sqft_living15))+geom_point(alpha=0.5)+geom_smooth()+scale_x_continuous(limits = c(0, 6000))+geom_abline(intercept=0,color="red")
+```
+La línea roja representa las casas en las que no hubo reforma. Por encima de ella las casa amplia su terreno habitable y por debajo la disimnuye tras la reforma. Se trata dos variable muy correlacionadas ya que es la misma variable medida en diferentes momentos del tiempo (lo que puede hacer que la variable __sqft_living15__ proporcione mayor información(reformas, cambios...) puesto que el año de medición es 2015. Debemos por tanto usar una u otra a la hora de estimar nuestro modelo de regresión.
+
+  + Relación entre __"Dist_from_seattle" y "price"__.
+```{r, warning=FALSE}
+a <- ggplot(train,aes(x=Dist_from_seattle,y=price))+geom_point()+geom_smooth()+scale_x_continuous(limits = c(0, 60000))
+b <- ggplot(train,aes(x=Dist_from_seattle,y=price_sqft))+geom_point()+geom_smooth()+scale_x_continuous(limits = c(0, 60000))
+grid.arrange(a,b, nrow=1)
+```
+
+La variable __Dist_from_seattle__ ha sido creado a partir de la latitud y longitud de la variable. Podemos ver que existe una relación entre distancia desde centro Seattle y el precio de las viviendas como se podría esperar. No obstante, vemos que dicha relación no siempre es lineal, lo cual podría suponer una violación de la hipótesis de de linealidad esperadas por la regresión lineal. En todo caso, parece que dicho modelo no sería el mas adecuada para ajustarse a esta variable.
+
+  + Mapa de calor de la variable __"price_sqft"__
+```{r}
+ggplot(train, aes(x=long, y=lat, color=price_sqft)) + geom_point(alpha=.2)+ xlim(-122.5, -121.75) + ylim(47.3, 47.75)  + ggtitle("Price_sqft")
+
+```
+
+Podemos ver nuevamente como la ubicación de las viviendas tiene una clara relción con el precio por pies cuadrados.
+
+
++  Mapa de calor de __"yr_built"__
+
+```{r}
+ggplot(train, aes(x=long, y=lat, color=yr_built)) + geom_point(alpha=.2)+ xlim(-122.5, -121.75) + ylim(47.3, 47.75)  + ggtitle("Price_sqft")
+
+```
+
+En este gráfico, vemos que el año de construcción de la vivienda esta muy relacionado con la ubicación. En los colores mas oscuros podemos obeservar que se trata de viviendas mas antiguas, de ahí que se ubiquen principalemnte en el centro de Seattle. Por otro lado, vemos como al alejarnos de la ciudad de Seattle la antigüedad de la vivienda va disminuyendo, tendencía lógica que coincide con el desarrollo demográfico de muchas ciudades. 
+
+
+
++  Mapa de calor de __"Clusters"__
+
+```{r, warning=FALSE}
+ggplot(train, aes(x=long, y=lat, color=as.factor(Clusters))) + geom_point(alpha=.2)+ xlim(-122.5, -121.75) + ylim(47.3, 47.75)  + ggtitle("Price_sqft")
+
+```
+
+Mediante este mapa de calor, podemos observar los diferntes clusters generados, donde se han agrupado viviendas en función de la distancia de cada una con respecto al resto.
+
+
+
+  + Relación entre las variable __"sqft_above" y "price_sqft"__ y __"sqft_living15" y "price_sqft"_
+```{r, warning=FALSE}
+a <- ggplot(train,aes(x=sqft_above,y=price_sqft))+geom_point(alpha=0.5)+geom_smooth()+scale_x_continuous(limits = c(0, 6000))
+b <- ggplot(train,aes(x=sqft_living15,y=price_sqft))+geom_point(alpha=0.5)+geom_smooth()+scale_x_continuous(limits = c(0, 6000))
+grid.arrange(a,b)
+```
+
+Podemos observar que para ambas variables mantienen una relación con la variable __price_sqft__ pero dista de ser lineal en algunos tramos. Este hecho, de nuevo, podría generar que nuestra regresión lineal no cumpla sus hipótesis. POr otra parte, quizas en un futuro proyecto se deberá probar otra tipo de modelo para explicar estas relaciones.
+
+
+
+  + Relación entre __"yr_built" y "sqft_above"__
+```{r, warning=FALSE}
+ggplot(train,aes(x=yr_built,y=sqft_above))+geom_point(alpha=0.5)+scale_x_continuous(limits = c(1900, 2020))+geom_smooth()
+
+```
+
+En esta ocasión vemos una tendencía  ascendente en función del año de construcción de la vivienda. Entendemos con esto que las nuevas viviendas cuentan con espacios bajo rasante, quizas una tendencia mas demandada en los últimos años.
+
+
+  + Relación entre __"floors"__ y __"price_sqft"__
+
+```{r}
+
+plotdata <- train %>%
+  group_by(floors) %>%
+  summarize(median_precio_m2 = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = floors, 
+           y = median_precio_m2)) +
+  geom_bar(stat = "identity")
+
+
+
+```
+
+Se observa una tendencía creciente en el rprecio fpor pies cuadrados y el número de plantas como es lógico. 
+
+
+  + Relación entre __"condition"__ y __"price_sqft"__
+
+```{r}
+plotdata <- train %>%
+  group_by(condition) %>%
+  summarize(median_precio_m2= median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = condition, 
+           y = median_precio_m2)) +
+  geom_bar(stat = "identity")
+
+```
+
+Al igual que para el número de plantas, observamos un aumento de precio por pies cuadrados a medida que la condición de la vivienda mejora, excepto para el primer nivel de esta variable. Esto puede deberse a que en ese nivel se concentren viviendas con unas caracteristas (por ejemplo, mayores metros cuadrados, mejores vistas..) que provequen que a pesar de no tener la mejor condición, puedan ser viviendas con un precio alto.
+
+
+  + Relación entre __"bathrooms"__ y __"price_sqft"__
+
+```{r}
+plotdata <- train %>%
+  group_by(bathrooms) %>%
+  summarize(median_precio_m2= median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = bathrooms, 
+           y = median_precio_m2)) +
+  geom_bar(stat = "identity")
+
+```
+
+Para la variable número de baños, no observamos una tendencia creciente como podríamos esperar. Observamos que el precio por pies cuadrados no depende del número de baños. No obstante, esto es una analísis univariante por lo que puede haber otras variables que este influenciando el precio.
+
+### Analisis multivariante cualitativo
+
+Se estudia el __precio_sqft__ observado entre las variables cualitativas:
+
+
+  + Relación entre la variable __"waterfront" y "price_sqft"__.
+```{r}
+plotdata <- train %>%
+  group_by(waterfront) %>%
+  summarize(median_precio_m2 = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = waterfront, 
+           y = median_precio_m2)) +
+  geom_bar(stat = "identity")
+
+
+```
+
+Podemos observar que las viviendas con vistas al mar duplican en precio aquellas sin vistas, lo que puede ser una variable muy explicativa en nuestro modelo.
+
+
+  + Relación entre la variable __"price_sqft" y "price_sqft"__.
+
+```{r}
+plotdata <- train %>%
+  group_by(sale_month) %>%
+  summarize(median_price_sqft = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = sale_month, 
+           y = median_price_sqft)) +
+  geom_bar(stat = "identity")
+
+
+```
+
+No observamos que el precio tengo una clara tendencia a lo largo de los meses. No obstante, el análisis de estacionalidad no es muy fiable, ya que no disponemos de datos mensuales en los dos años que que forman nuestra base de datos. 
+
+  + Relación entre la variable __"sale_year" y "price_sqft"__.
+
+```{r}
+plotdata <- train %>%
+  group_by(sale_year) %>%
+  summarize(median_price_sqft = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = sale_year, 
+           y = median_price_sqft)) +
+  geom_bar(stat = "identity")
+
+
+```
+
+Podemos ver que en el año 2015 el precio de la vivienda se incrementó ligeramente. Esto puede deberse a múltiple factores, si bien podemos pensar que puede tratarse del incremento de precios o inflacción. 
+
+
+
+## TRANSFORMACIÓN DE VARIABLES
+
+En este apartado propondremos diferentes tranformaciones de las variables en base al análisis realizado anteriormente para su posterior uso en el modelo. Hemos podido observar hasta ahora que existen relaciones no lineales entre la variables respuesta, __price_sqft__, y algunas variables. Su inclusión directa sin tranformar cuasara que el modelo no cumpla con las hipótesis básicas de la regresión lineal.
+
+
+### Tratamiento de variables continuas
+
+  + Transformación de __price_sqft__ 
+```{r}
+
+#Transformacion price_sqft con log10
+
+train$log_price_sqft <- log10(train$price_sqft)
+test$log_price_sqft <- log10(test$price_sqft)
+
+p1 <- ggplot(train, aes(x=price_sqft)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+
+p2 <- ggplot(train, aes(x=log_price_sqft)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+
+qqnorm(train$price_sqft)
+qqline(train$price_sqft)
+qqnorm(train$log_price_sqft)
+qqline(train$log_price_sqft)
+
+
+```
+
+Nuestra variable __price_sqft__, presenta una distribución sesgada a la izquierda. Podemos por otra parte ver como Q-Q plot nos indica que no sigue una distribución normal. Creemos que aplicando la función logaritmo conseguimos que la variable se acerque mas a una distribución normal. La nueva variable __log_price_sqft__ presenta una distribución mas centrada, si bien la variable continua sin seguir una distribución normal como nos indica su Q-Q plot. 
+
++ Transformación de __Dist_from_seattle__
+```{r}
+
+#Transformacion price_sqft con log10
+
+train$log_Dist_from_seattle <- log10(train$Dist_from_seattle)
+test$log_Dist_from_seattle <- log10(test$Dist_from_seattle)
+
+p1 <- ggplot(train, aes(x=Dist_from_seattle)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+
+p2 <- ggplot(train, aes(x=log_Dist_from_seattle)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+
+qqnorm(train$Dist_from_seattle)
+qqline(train$Dist_from_seattle)
+qqnorm(train$log_Dist_from_seattle)
+qqline(train$log_Dist_from_seattle)
+
+
+```
+
+Podemos observar que la variable distancia desde el centro de Seattle tiene una distribución sesgada hacía la izquierda. Podemos observar que la mayoría de las viviendas se encuentran cerca del centro. Hemos optado por aplicar la función logaritmo para intentar normalizar la variable. 
+
+  + Transformación de __sqft_living15__ 
+  
+```{r}
+
+#Transformacion sqft_living15 con log10
+
+train$log_sqft_living15 <- log10(train$sqft_living15)
+test$log_sqft_living15 <- log10(test$sqft_living15)
+train$log_sqft_living <- log10(train$sqft_living)
+test$log_sqft_living <- log10(test$sqft_living)
+
+p1 <- ggplot(train, aes(x=sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=log_sqft_living15)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(train$sqft_living)
+qqline(train$sqft_living)
+qqnorm(train$log_sqft_living)
+qqline(train$log_sqft_living)
+
+```
+
+
+Podemos ver que la variable __sqft_living15_ se encuentra ligeramente sesgada a la izquierda, por lo que optamos por aplicar la función logaritmo, mediante el cual conseguimos que la variable se aproxime mas a una distribución normal.
+
+
+
+  + Transformación de __sqft_above__.
+```{r, warning=FALSE}
+
+#Transformacion sqft_above con log10
+
+train$log_sqft_above <- log10(train$sqft_above)
+test$log_sqft_above <- log10(test$sqft_above)
+
+p1 <- ggplot(train, aes(x=sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+p2 <- ggplot(train, aes(x=log_sqft_above)) + geom_histogram(aes(y=..density..), colour = "navy", fill = "steelblue", bins=30) + geom_density(colour = "goldenrod1", size = 1)
+grid.arrange(p1, p2, nrow=1)
+
+qqnorm(train$sqft_above)
+qqline(train$sqft_above)
+qqnorm(train$log_sqft_above)
+qqline(train$log_sqft_above)
+
+```
+La variable __sqft_above__ presenta un claro sesgo a la izquierda. Además, como hemos visto anteriormente, la relación con la variable respuesta no es lineal en todo los tramos. Por ello, nuevamente optamos por la función logarítmica para tratar de conseguir una relación lineal. 
+
+
+
+ + Transformacion de __sqft_basement__ a una variable dicotómica
+
+```{r}
+#Creamos la variable en la base de datos TRAIN y hacemos lo mismo en TEST, ya que si la variable resulta relevante en el modelo entrenado con TRAIN, debemos contar con ese mismo tratamiento para poder predecir en TEST.
+
+train$sqft_basement_ind = as.factor(ifelse(train$sqft_basement > 0, 1, 0))
+test$sqft_basement_ind = as.factor(ifelse(test$sqft_basement > 0, 1, 0))
+
+plotdata <- train %>%
+  group_by(sqft_basement_ind) %>%
+  summarize(median_price_sqft = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = sqft_basement_ind, 
+           y = median_price_sqft)) +
+  geom_bar(stat = "identity")
+
+
+str(train)
+
+str(test)
+```
+
+Podemos observar que la nueva variable dicótemica muestra que las viviendas con un una superficie bajo rasante tienen un precio por pies cuadrados, lo cual tiene un sentido económico.
+
+ + Transformacion de __yr_renovated__ a una variable dicotómica
+
+```{r}
+
+#Creamos la variable en la base de datos TRAIN y hacemos lo mismo en TEST, ya que si la variable resulta relevante en el modelo entrenado con TRAIN, debemos contar con ese mismo tratamiento para poder predecir en TEST.
+
+train$renovated_ind = as.factor(ifelse(train$yr_renovated > 0, 1, 0))
+test$renovated_ind = as.factor(ifelse(test$yr_renovated > 0, 1, 0))
+
+plotdata <- train %>%
+  group_by(renovated_ind) %>%
+  summarize(median_price_sqft = median(price_sqft))
+
+# plot mean salaries
+ggplot(plotdata, 
+       aes(x = renovated_ind, 
+           y = median_price_sqft)) +
+  geom_bar(stat = "identity")
+
+
+```
+
+Podemos observar que para nuestra nueva variable, cuando el indicador de reforma es igual 1, lo que quiere decir que la casa ha sido reformada en alguna ocasión, el precio medio es mas alto. Esto hecho tiene mucho sentido, ya que podemos esperar que una casa reformada tenga un precio medio mas alto que no casa que nunca se ha reformado.
+
+
+### Tratamiento de variables catégoricas
+
+Para aquellas variables catégoricas, hemos optado por convertirlas en variables dummies con el fin de evitar la combinación lineal en el modelo, lo que puede afectar a la estimación de los parámetros. Para ello, hemos excluido el nivel base de cada una de las variables.
+
+```{r}
+
+train_dummies = dummy_cols(train, select_columns = c('renovated_ind','sqft_basement_ind', 'waterfront','sale_quarter','Clusters', 'sale_month','sale_year'),remove_most_frequent_dummy = TRUE,remove_selected_columns = TRUE)
+test_dummies =  dummy_cols(test, select_columns = c('renovated_ind','sqft_basement_ind', 'waterfront','sale_quarter','Clusters', 'sale_month','sale_year'),remove_most_frequent_dummy = TRUE,remove_selected_columns = TRUE)
+
+str(train_dummies)
+str(test_dummies)
+```
+
+Vemos que 
+
+
+
+## DETECCIÓN E IMPUTACIÓN DE DATOS FALTANTES
+
+Dado que la base de datos no contiene variables missing, hemos decidido incluir artificialmente para trabajar este apartado.
+
+### Datos faltantes
+
+Se genera un 5% de datos faltantes artificiales en las variables __"grade", "sqft_living15" y "sqft_basement"__.
+
+```{r, warning=FALSE}
+miss <- c("grade", "sqft_living15","sqft_above")
+train_na <- train %>% select(miss)
+train_miss <- prodNA(train_na, 0.05)
+
+var <- c("lat", "long", "id", "date", "price","bedrooms","bathrooms","sqft_living","sqft_lot", "floors","view","waterfront", "condition","sqft_lot15","yr_built","yr_renovated","sale_date","sale_year","sale_month","sale_quarter","sale_tenure","price_sqft","Dist_from_seattle","sqft_basement")
+
+train_new <- train %>% select(var)
+
+train_miss_new <- cbind(train_miss,train_new)
+colSums(is.na(train_miss_new[,miss]))
+```
+
+A continuación observamos gráficamente el patrón de los datos faltantes:
+
+```{r}
+mice_plot <- aggr(train_miss_new, col=c('navyblue','yellow'),
+                    numbers=TRUE, sortVars=TRUE,
+                    labels=names(train_miss_new), cex.axis=.7,
+                    gap=1, ylab=c("Missing data","Pattern"))
+```
+
+### Imputación de datos faltantes
+
+Para la imputación de datos se emplea el método __kNN__ a menudo denominado "imputación del vecino más cercano" que ha demostrado ser eficaz. Para la imputación de una nueva observación esta es votada entre sus K vecinos más cercanos. Para ellos, seleccionamos las variables mas correlacionadas y la usamos como variables que pueden ayudarnos a inferir los valores missing de estas variables.
+
+```{r}
+imputed <- train_miss_new %>% select(grade, bathrooms, bedrooms,price) %>% VIM::kNN(variable='grade')
+imputed <- train_miss_new %>% select(sqft_living,bedrooms, bathrooms,price,sqft_above) %>% VIM::kNN(variable='sqft_above')
+imputed <- train_miss_new %>% select(sqft_living15, sqft_living, sqft_above, bathrooms, bedrooms, price) %>% VIM::kNN(variable='sqft_living15')
+
+
+train_new$grade <- imputed$grade
+train_new$sqft_above <- imputed$sqft_above
+train_new$sqft_living15 <- imputed$sqft_living15
+
+head(train_new)
+```
+
+Una vez imputados los valores missing, comprobamos que la base de datos ya no contiene valores missing.
+
+## AJUSTE Y VALIDACIÓN DEL MODELO
+
+En este apartado, hemos estimado varios modelos a partir de distintas metodologías para poder comparar cual de ellos nos arroja mejores resultados, esto es, menor error cuadratico medio. Para ello, se han estimado los siguientes modelos:
+  
+  * Modelo con la variables respuesta "log_price_sqft" : en este modelo utilizamos la variable respuesta dividida por los metros cuadrados con el objetivo de estabilizar la variable "price", variable con mucha dispersión.
+
+* Modelo con la variables respuesta sugeridas por la regresión LASSO : en este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
+
+* Modelo con la variables respuesta sugeridas por su capacidad de reducción del AIC : en este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas que mayor contribución tienen en términos de reducción del AIC.
+
+
+Para los dos modelos iniciales, la metodología de selección de variables ha sido similar a un proceso "backwards". Se han introducido todas las variables (previa limpiza de aquellas con mayor correlación entre si) y se ha estimado el modelo. Para aquellas variables que el modelo consideraba que no son significativas, estas son eliminadas y se estima un nuevo modelo. Este proceso se repite de forma recursiva hasta que todas las variables incluidas resulten significativas. 
+
+
+### Modelo Incial
+
+En este apartado estimamos un modelo con la variables respuesta "log_price_sqft". Para este modelo utilizamos la variable respuesta dividida por los pies cuadrados con el objetivo de estabilizar la variable "price", la cual presenta una gran dispersión.
+
+En este primer modelo, como ya se ha mencionado anteriormente, se ha procedido de la siguiente manera:
+
+  * Se han introducido todas aquellas variables dispnibles, excepto aquellos pares de variables que estaban altamente correlaciondas, en cuyo caso hemos probado una de de ellas y hemos incluido unicamente aquella que haya mejorado el R cuadrado ajustado. 
+  * Una vez estimado el modelo, aquellas variables que no eran significativas se han sacado del mismo, volviendo a estimar el modelo nuevamente sin esas variables. Este proceso se ha repetido reiteradamente hasta que todas las variables del modelo han resultado ser significatvas.
+  * Por último, se ha analizado la lógica de los coeficientes en relación a la variables respuesta. En caso de carecer de lógica, se ha intentado no incluir la variable.
+
+```{r, include=FALSE}
+
+#specify_decimal
+specify_decimal <- function(x, k) format(round(x, k), nsmall=k)
+
+#beautifying summary.lm
+new_summary  <- function(lmcoef, digits) {
+  
+  coefs <- as.data.frame(lmcoef)
+  coefs[] <- lapply(coefs, function(x) specify_decimal(x, digits))
+  coefs
+  
+}
+
+
+```
+
+
+```{r}
+
+train_v1 <- na.omit(train_dummies)
+
+#Incluimos en c() las variables que NO queremos usar en la regresiÃ³n.
+train_v2 = dplyr::select(train_v1,-c(id,date,price,sqft_living,sqft_living15,sqft_above,sqft_basement,yr_renovated,zipcode, lat, long,sale_date,Dist_from_seattle,log_sqft_living15,price_sqft,log_sqft_above,sale_month_01,sale_month_02,sale_month_03,sale_month_04,sale_month_06,sale_month_07,sale_month_08,sale_month_09,sale_month_10,sale_month_11,sale_month_12,sale_quarter_Q1 ,sale_quarter_Q3,sqft_lot15, sale_quarter_Q4,sale_year_2015,yr_built,sqft_basement_ind_1,floors,sqft_lot ))
+
+
+model <- lm(log_price_sqft ~ .,  data = train_v2)
+summary(model)
+new_summary(summary(model)$coefficients, 5)
+
+plot(model, which=1, col=c("blue"))
+plot(model, 2)
+
+require(nortest)  # Se debe haber instalado nortest
+lillie.test(model$residuals)
+
+
+gvlma(model)
+car::vif(model)
+
+```
+
+
+
+A continuación realizamos una test de bondad del ajuste: 
+
+```{r}
+
+#Test bondad del auste para los residuos del modelo con log_price_sqft
+
+require(nortest)  # Se debe haber instalado nortest
+(lillie.test(model $residuals))
+
+
+```
+
+En este primer modelo, podemos ver que el R2 ajustado es del 67.9%. Por otra parte, el grafico de los residuos no muestran una tendencia, si bien parece que los residuos fluctuan alrededor de la media, siendo la varianza relativamente constante.
+
+No obstante, tanto el loes test sobre el cumplimineto de las hipótesis de la regresión lineal, como el Q-Q plot y el test de bondad de ajuste r sobre los residuos nos hacen rechazar la hipótesis nula de normalidad.
+
+
+  * En cuanto a la intepretación del modelo, la variable respuesta tiene aplicado la función logaritmo. Su relacion con las variables respuesta es la siguiente:
+
+  + Cuando a la variable respuesta no se le ha aplicado la función logaritmica, nos encontramos ante la semielasticidad de Y respecto a X. Se interpreta como un incremento de 1 unidad en X es asociado a un cambio en Y de (100·β1 )%.
+
+  + Cuando a una variable respuesta se le ha aplicado también la función logaritmica, se atribuye a β1 la elasticidad de Y, respecto a X. Se interpreta como un incremento del 1% en X es asociado a un cambio en Y de B1%.
+
+  * Analizando los coeficientes del modelo resultante, podemos concluir lo siguiente:
+
+  + Podemos observar que el coeficiente de la variable log_Dist_from_seattle tiene un un signo, lo que nos indica que a mayor distancia, menor precio, tal como habiamos podido analizar previamente.
+
+  + El comportamiento de la variable log_sqft_living puede parecer contraintuitivo, no obstante, cabe recordar que estamos modelando la variables respuesta como precio por pies cuadrados dividido sqft_living, lo que provoca que la relación sea inversa. 
+  
+  + El coeficiente de la variable bedrooms tiene un signo negativo, si bien durante el análisis univriante y multivariantes se ha observado que esta variable no esta muy correlacionada con el precio, ya que mayor número de habitaciones no se traducía directamente en un mayor precio.
+  
+  + Otra variable cuyo coeficiente también es intersante de analizar es sale_tenure, variable que recoge la antiguedad de la vivienda en el momento de venta. Vemos que el signo es positivo, lo que se traduce en que a mayor antigüedad mas alto será el precio de la vivienda, ceteris paribus. Esto puedo resultar ilógico, sin embargo, como se ha observado anteriormente mediante el mapa de calor, las viviendas mas antiguas son las aquellas mas céntricas, lo que por otra parte se traducía en viviendas mas caras. 
+  
+  + Las variables view, condition, grade, renovated_ind_1, waterfront_1 presentan coeficientes positivos, acordes a lo esperado y en línea con el análisis realizado.
+  
+  + La varibels Clúster creada resulta muy significativa, siendo sigificativos todos los niveles de la variable. Vemos que los signos de los diferentes variables  varian en función del cluaster al que petenza la vivienda. Esto tiene lógica, ya que mediante esta variables buscamos capturar información que la distancia geográfica por si misma no logra (por ejemplo: niveles de renta, tipo de barrio...).
+
+```{r}
+test_pred_model <- predict(model,newdata=test_dummies)
+
+test_y   <- test$log_price_sqft
+
+SS.total      <- sum((test_y - mean(test_y))^2)
+SS.residual   <- sum((test_y - test_pred_model)^2)
+SS.regression <- sum((test_pred_model- mean(test_y))^2)
+test.rsq <- SS.residual/SS.total  
+(r2 = SS.regression/SS.total) 
+
+
+```
+
+Este modelo arroja un R2 del 66.9% en la base de datos "test". Al no observarse un descenso brusco del R2, podemos por tanto afirmar que nuestro modelo se comporta razonablemnte bien en datos train que no ha visto anteriormente, y a priori, no hay indicios de over-fitting.
+
+### Modelo con método LASSO
+
+Para este modelo utilizamos de nuevo la variable respuesta dividida por los pies cuadrados, siendo las variables explicativas aquellas seleccionadas por la regresión LASSO.
+
+
+```{r, include=FALSE}
+
+train_v2_nona <- na.omit(train_dummies)
+
+x <- model.matrix(train_v2_nona$log_price_sqft~., train_v2_nona )[,-1]
+y <- train_v2_nona$log_price_sqft
+
+
+lambdas <- model.matrix(log_price_sqft ~., data = train_v2_nona)
+
+# Ajuste de la funciÃ³n de error
+cv_lasso <- cv.glmnet(x = lambdas, y = y, alpha = 1)
+plot(cv_lasso)
+
+
+out_eleven <- glmnet(lambdas,y,alpha=1,lambda = cv_lasso$lambda.1se)
+out_eleven
+coef(out_eleven )
+cv_lasso
+
+```
+
+Observamos que la regresión LASSO minimiza el error con 21 variables, si bien con 17  variables el error apenas incrementa. A partir de esta 21 variables propuestas por esta metodología, estimamos un nuevo modelo y realizamos un test de bondad del ajuste sobre sus residuos:
+  
+  
+```{r}
+
+# Test de normalidad de residuos
+preds_lasso <- predict(out_eleven,lambdas)
+residuals_lasso <- y - preds_lasso
+lillie.test(residuals_lasso)
+
+rsq_lasso <- cor(y, preds_lasso)^2
+sprintf("R2 = %f", rsq_lasso)
+
+
+```
+
+
+Nuevamente rechzamos la hipótesis de normalidad de los residuos. Por otra parte el R2 de este modelo ha bajado en 0.2% respecto al modelo anterior, situandose en el 67.85%.
+
+
+### Modelo basado en AIC
+
+En este modelo utilizamos de nuevo la variable respuesta dividida por los metros cuadrados, siendo las variables explicativas aquellas que mayor contribución tienen en términos de reducción del AIC. Esta metodología nos permite sobretodo entender la importancia que tienen nuestras variables dentro del modelo.
+
+```{r}
+
+#Analisis de variables candidatas 
+step_model <- stepAIC(model, trace = TRUE, direction= "both")
+#stargazer(model, step_model, type = "text")
+
+
+```
+
+Observamos que a partir de la variable "Cluster_6", el aporte del resto de variables a la redución del AIC es mínimo. Estableciendo el humbral de forma arbitraria en 5.5, estimamos un nuevo modelo basado en en las variables que superan el umbral propuesto, siendo el número de variables de 18.
+
+Por otro lado, el AIC no permite valorar la importancia de cada variable en el modelo. Podemos observar en este caso que las variables __grade__ y __log_sqft_living__ son las mas importantes en terminos de reducción del AIC, muy seguida de la variable Clusters y log_Dist_from_seattle. Podemos por tanto concluir que estas nuevas variables porpuestas son muy intersanntes, ayudando a entender mejor nuestra variables respuesta.
+
+
+```{r}
+
+model_AIC <- lm(log_price_sqft  ~ +log_sqft_living  + grade + Clusters_1 + Clusters_4 + Clusters_5 + log_Dist_from_seattle + Clusters_11  + Clusters_8 + view +  waterfront_1+  condition + waterfront_1 + sqft_lot  + Clusters_10 + Clusters_6 , data = train_dummies)
+
+
+summary(model_AIC)
+
+summary(model_AIC)
+new_summary(summary(model_AIC)$coefficients, 5)
+
+plot(model_AIC, which=1, col=c("blue"))
+plot(model_AIC, 2)
+gvlma(model_AIC)
+
+
+
+```
+
+A la vista de los resultados, podemos observar que el R2 se situa en 67.44%, ligeramente inferior a los dos modelos anteriores, si bien el modelo se ha estimado con 7 variables menos, lo que nos permite concluir que estas 7 variable no aportan una gran capacidad explicativa al modelo, quedando a discreción del analista el trade-off entre mejora de R2 y el principio de parsimonia. 
+
+
+```{r}
+
+lillie.test(model_AIC$residuals)
+
+
+```
+
+Para este modelo, nuevamente rechazamos las hipótesis de que los residuos sean ruido blanco.
+
+
+```{r, warning=FALSE}
+test_pred_model <- predict(model_AIC,newdata=test_dummies)
+
+test_y   <- test$log_price_sqft
+
+SS.total      <- sum((test_y - mean(test_y))^2)
+SS.residual   <- sum((test_y - test_pred_model)^2)
+SS.regression <- sum((test_pred_model- mean(test_y))^2)
+test.rsq <- SS.residual/SS.total  
+(r2 = SS.regression/SS.total) 
+
+```
+
+
+Este modelo arroja un R2 del 66.7% en la base de datos "test". Podemos nuevamente observar que mediante esta metodología el error cometido por el modelo en la base de datos test
+
+
+## CONCLUSIONES
+
+Las principales conclusiones han sido las siguientes:
+  
+  * En análisis inicial nos ha permitido conocer los datos y sus principales medidas. Asímismo, hemos podido crear nuevas variables que no han sido de gran utilidad a la hora de estimar el modelo final.
+
+*  Mediante el análisis multivariantes, donde hemos podido analizar tanto las variables entre si como las variables frente a la variable respuesta, se ha podido detrminar que variables nos ayudan a explicar mejor la variable respuesta, asi como aquellas vatriables a excluir para no incurrir en multicolinealidad. Por otra parte, algunas variables que mantenian una relación no lineal con las variable respuesta han sido transformadas para buscar una relación lineal. Las variables cualitativas han sido sido trasnformadas a dummies para evitar combinaciones lineales.
+
+* En cuanto a los modelos, ninguno de ellos logra que los residuos sean ruido blanco, ni tampoco evitar la heterocedasticidad. No obstante, el R2 observado para todos los modelos en la base de datos "test" es bueno, lo que indica que los modelos son estables y no se incurre en over-fitting aparentementea pesar de no cumplir las principales hipótesis de la regresión lineal.
+
+* Como posibles mejoras, queda tratar de buscar un algoritmo que agrupe las vivinedas en clusters mas eficiente, ya que el método usado en este proyecto es computalmente muy costoso si se tiene en cuenta el tamaño muestral. En cuanto a la modelización, se podría probar otros modelos que no asuman una relación lineal entre las variables. 
+
+
+
+
